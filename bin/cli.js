@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { select, multiselect, text, intro, outro, spinner, isCancel, cancel } from '@clack/prompts';
+import { select, multiselect, text, outro, spinner, isCancel, cancel } from '@clack/prompts';
 import { getFilesInDir, parseFile } from '../src/parser.js';
+import { printBanner } from '../src/banner.js';
 import collarCmd  from '../src/commands/collar.js';
 import assayCmd   from '../src/commands/assay.js';
 import lithoCmd   from '../src/commands/litho.js';
@@ -15,7 +16,7 @@ function checkCancel(val) {
   return val;
 }
 
-intro('Drill Stats CLI — Vulcan Project');
+await printBanner();
 
 // 1. Detecta archivos en la carpeta actual
 const files = getFilesInDir(process.cwd());
