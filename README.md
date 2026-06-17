@@ -13,119 +13,66 @@
 </p>
 
 Built for geologists and data technicians who need quick, reliable summaries of assay grades, collar coordinates, lithology codes, and data schemas — directly from the terminal, without opening Excel.
+A fast, interactive command-line tool for processing drillhole data files (.csv / .txt) and generating statistics, limits, and reports ready for use in Vulcan mining software.
 
----
+> [!IMPORTANT]
+> This tool is specifically designed for mining workflows, focusing on spatial boundaries, assay percentiles, and lithology legend extraction.
 
 ## Features
 
-- **Assay Ranges** — Calculates min/max grades and builds percentile-based class ranges for one or more selected mineral columns (e.g., `CUT%`, `Au`, `Ag`, `Pb`).
-- **Collar Limits** — Computes spatial boundaries for `EASTING`, `NORTHING`, and `ELEVATION` with configurable buffer and directional rounding for Vulcan block model setup.
-- **Litho Values** — Extracts unique lithology codes with frequency counts, filtered by minimum occurrence threshold.
-- **Vulcan Schema** — Infers the correct Vulcan data type (`text`, `integer`, `single`, `double`) for each column based on its content.
-- **Audit** — Validates column integrity, detects null/empty values, and flags comma-formatted decimals that are incompatible with Vulcan.
-- **Export** — Outputs results to `.txt` (notebook-ready) or `.csv` (Excel/Vulcan-ready) with auto-generated timestamps.
+- **Audit File**: Validate data integrity, detect missing columns, null values, and incorrect decimal separators.
+- **Collar Limits**: Calculate spatial boundaries (min/max) for coordinates with directional rounding and optional buffering.
+- **Assay Ranges**: Perform percentile-based range analysis for chemical grades across multiple classes.
+- **Litho Values**: Extract unique lithology codes from one or more columns, ready for legend creation.
+- **Vulcan Types**: Infer Vulcan-compatible data types (text, integer, single, double) from your data.
 
----
+## Getting Started
 
-## Requirements
+### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18 or later
-- [pnpm](https://pnpm.io/) (recommended) or npm
+- [Node.js](https://nodejs.org/) v18 or later.
+- [pnpm](https://pnpm.io/) (recommended).
 
----
-
-## Installation
+### Installation
 
 ```bash
-git clone https://github.com/your-username/drill-cli.git
-cd drill-cli
 pnpm install
 ```
 
----
+### Usage
 
-## Usage
-
-Place your `.csv` or `.txt` drillhole files in the project root (or the directory from which you run the CLI), then launch the interactive menu:
+To start the interactive interface:
 
 ```bash
 pnpm drill
 ```
 
 The CLI will guide you through:
-
-1. **Select operation** — Choose one of: `Audit`, `Collar Limits`, `Assay Ranges`, `Litho Values`, or `Vulcan Types`.
-2. **Select file** — Pick from the `.csv` / `.txt` files detected in the current directory.
-3. **Select export format** — `TXT` (block-of-notes style) or `CSV` (tabular, Excel-compatible).
-4. **Operation-specific options** — For example, assay will let you select which mineral columns to analyze and how many percentile classes to generate.
-
-Output files are written to the current directory with a timestamp in the filename (e.g., `assay_limits_ranges_2026-06-16T22-00-00.csv`).
-
----
-
-## Assay Ranges — Example Output
-
-```
-=== ASSAY LIMITS ===
-
-CUT%:
-  raw         : [0, 2.24]
-  count       : 487
-  ranges (6 clases):
-  Clase          From         To   Percentil
-  ────────────────────────────────────────────────
-  1                 0          0   0% → 16.6667%
-  2                 0       0.29   16.6667% → 33.3333%
-  3              0.29       0.59   33.3333% → 50%
-  4              0.59        0.8   50% → 66.6667%
-  5               0.8       1.04   66.6667% → 83.3333%
-  6              1.04       2.24   83.3333% → 100%
-```
-
----
-
-## File Format Support
-
-The CLI automatically detects the delimiter of the input file:
-
-| Format | Delimiter |
-|--------|-----------|
-| CSV | `,` (comma) |
-| TXT | `\t` (tab) |
-
-Both formats must have a header row as the first line.
-
----
-
-## Running Tests
-
-```bash
-node tests/run.js
-```
-
-The test suite covers collar limits (with and without buffer), assay ranges (structure, continuity, class count), and litho frequency filtering.
-
----
+1. Selecting an operation.
+2. Choosing a data file from your current directory.
+3. Configuring operation-specific options (e.g., buffer size, number of classes, or columns to analyze).
+4. Exporting the results to TXT or CSV.
 
 ## Project Structure
 
-```
-drill-cli/
-├── bin/
-│   └── cli.js          # Interactive CLI entry point
-├── src/
-│   ├── parser.js       # File reading and column parsing
-│   └── commands/
-│       ├── assay.js    # Assay grade range analysis
-│       ├── collar.js   # Collar coordinate limits
-│       ├── litho.js    # Lithology code frequency
-│       ├── schema.js   # Vulcan data type inference
-│       ├── audit.js    # Data quality audit
-│       └── export.js   # TXT / CSV file output
-├── docs/
-│   └── src-reference.md  # Full technical reference for src/
-└── tests/
-    └── run.js          # Automated test suite
+- `bin/`: CLI entry point.
+- `src/cli/`: Interactive UI layer using Clack prompts.
+- `src/core/`: Core parsing and data processing logic.
+- `src/commands/`: Implementation of individual data analysis operations.
+- `tests/`: Custom assertion-based test suite.
+
+## Testing
+
+Run the automated test suite to ensure data processing accuracy:
+
+```bash
+pnpm test
 ```
 
+## Tech Stack
+
+- **Runtime**: Node.js (ES Modules)
+- **UI**: `@clack/prompts`
+- **Data Parsing**: Custom high-performance CSV/TXT parser.
+- **Package Management**: pnpm
 > For a full description of every module, function, and return type, see [docs/src-reference.md](./docs/src-reference.md).
