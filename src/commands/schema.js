@@ -1,16 +1,4 @@
-import { parseColumns } from '../parser.js';
-import { exportData } from './export.js';
-
-function countDecimals(value) {
-  if (Math.floor(value.valueOf()) === value.valueOf()) return 0;
-  const str = value.toString();
-  if (str.indexOf('.') !== -1 && str.indexOf('-') !== -1) {
-      return str.split('-')[1] || 0;
-  } else if (str.indexOf('.') !== -1) {
-      return str.split('.')[1].length || 0;
-  }
-  return str.split('-')[1] || 0;
-}
+import { parseColumns } from '../core/parser.js';
 
 function countDecimalsString(str) {
   // Manejo de notación científica (ej: 1e-8)
@@ -88,12 +76,5 @@ export function printSchema(result) {
 export default function schemaCmd(file, opts) {
   const result = runSchema(file, opts);
   printSchema(result);
-  if (opts.output) {
-    const flatResult = Object.fromEntries(
-      Object.entries(result).map(([k, v]) => [k, { type: v.type }])
-    );
-    const f = exportData(flatResult, 'schema_vulcan', opts.output);
-    console.log(`\nExportado: ${f}`);
-  }
   return result;
 }

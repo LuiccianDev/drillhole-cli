@@ -35,5 +35,12 @@ drill-cli is a specialized Node.js command-line tool designed for geologists and
 - Extension Pattern: To add a new command, create a module in src/commands/ and register it in bin/cli.js.
 - Testing: Always verify changes by running pnpm test. Add new test cases to tests/run.js for any new logic.
 
+## Negative Constraints (What NOT to do)
+- Do NOT use npm or yarn: pnpm is the mandatory package manager.
+- Do NOT add testing frameworks: Avoid Jest, Vitest, or others. Stay within the custom runner.
+- Do NOT process other formats: Stick strictly to .csv and .txt files.
+- Do NOT bypass @clack/prompts: Maintain the established interactive CLI patterns.
+- Do NOT use 'require' or 'var': Follow modern ES Module and clean coding standards.
+
 ---
 *Reference GEMINI.md for team-specific workflows and docs/src-reference.md for detailed API documentation.*

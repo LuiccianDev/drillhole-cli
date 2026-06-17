@@ -1,4 +1,4 @@
-import { parseColumns } from '../parser.js';
+import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
 
 // Redondeo direccional
@@ -25,18 +25,41 @@ function calcLimits(vals, unit, bufferXY, isZ = false) {
 }
 
 export function runCollar(file, opts = {}) {
-  const { columns } = parseColumns(file);
+  const { columns, headers } = parseColumns(file);
   const buffer = parseFloat(opts.buffer ?? 0);
 
-  // Valores por columna
-  const get = (col) => columns[col]
-    ? columns[col].map(v => parseFloat(v)).filter(v => !isNaN(v))
-    : [];
+  // Mapeo flexible de columnas comunes
+  const map = {
+    EASTING:   ['EASTING', 'EAST', 'X', 'XCOLLAR'],
+    NORTHING:  ['NORTHING', 'NORTH', 'Y', 'YCOLLAR'],
+    ELEVATION: ['ELEVATION', 'ELEV', 'Z', 'ZCOLLAR'],
+    LENGTH:    ['LENGTH', 'DEPTH', 'MAX_DEPTH', 'TD']
+  };
 
-  const eastVals  = get('EASTING');
-  const northVals = get('NORTHING');
-  const elevVals  = get('ELEVATION');
-  const lenVals   = get('LENGTH');
+  const findCol = (keys) => keys.find(k => headers.includes(k));
+
+  const get = (keys) => {
+    const col = findCol(keys);
+    return col ? columns[col].map(v => parseFloat(v)).filter(v => !isNaN(v)) : [];
+  };
+
+  const eastVals  = get(map.EASTING);
+  const northVals = get(map.NORTHING);
+  const elevVals  = get(map.ELEVATION);
+  const lenVals   = get(map.LENGTH);
+
+  // Validación: si no hay datos en las coordenadas principales
+  if (!eastVals.length || !northVals.length || !elevVals.length) {
+    throw new Error('No se encontraron columnas de coordenadas válidas (X/Y/Z). Revisa los encabezados del archivo.');
+  }
+
+  // Identificar qué encabezados se usaron para el reporte
+  const usedHeaders = {
+    E: findCol(map.EASTING),
+    N: findCol(map.NORTHING),
+    Z: findCol(map.ELEVATION),
+    L: findCol(map.LENGTH)
+  };
 
   // EASTING — 6 dígitos → redondeo centena, buffer x100
   const easting  = calcLimits(eastVals,  100, buffer);
@@ -47,7 +70,16 @@ export function runCollar(file, opts = {}) {
   // ELEVATION (Z):
   //   min_z = MIN(ELEVATION) - MAX(LENGTH)  → redondeo decena, buffer /10
   //   max_z = MAX(ELEVATION)                → redondeo decena, buffer /10
-  const maxLen  = Math.max(...lenVals);
+  
+  // Si no hay LENGTH en el archivo, usamos externalMaxLen si existe
+  let maxLen = lenVals.length > 0 ? Math.max(...lenVals) : 0;
+  let source = usedHeaders.L || 'LENGTH column';
+
+  if (opts.externalMaxLen !== undefined) {
+    maxLen = parseFloat(opts.externalMaxLen);
+    source = 'external source';
+  }
+
   const minElev = Math.min(...elevVals);
   const maxElev = Math.max(...elevVals);
   const buf_z   = buffer / 10;
@@ -56,17 +88,25 @@ export function runCollar(file, opts = {}) {
     raw_min:      minElev,
     raw_max:      maxElev,
     max_length:   maxLen,
+    len_source:   source,
     min_boundary: floorTo(minElev - maxLen, 10) - buf_z,
     max_boundary: ceilTo(maxElev,           10) + buf_z,
   };
 
   // LENGTH — solo informativo, sin redondeo ni buffer
   const length = {
-    raw_min: Math.min(...lenVals),
+    raw_min: lenVals.length > 0 ? Math.min(...lenVals) : 0,
     raw_max: maxLen,
+    source: source
   };
 
-  return { EASTING: easting, NORTHING: northing, ELEVATION: elevation, LENGTH: length };
+  return { 
+    EASTING: easting, 
+    NORTHING: northing, 
+    ELEVATION: elevation, 
+    LENGTH: length,
+    _headers: usedHeaders 
+  };
 }
 
 export function printCollar(result) {
@@ -86,12 +126,12 @@ export function printCollar(result) {
 
   console.log('\nELEVATION (Z):');
   console.log(`  raw_elev    : [${ELEVATION.raw_min}, ${ELEVATION.raw_max}]`);
-  console.log(`  max_length  : ${ELEVATION.max_length}`);
+  console.log(`  max_length  : ${ELEVATION.max_length} (${ELEVATION.len_source})`);
   console.log(`  min_boundary: ${ELEVATION.min_boundary}  (MIN_ELEV - MAX_LENGTH, redondeo decena)`);
   console.log(`  max_boundary: ${ELEVATION.max_boundary}  (MAX_ELEV, redondeo decena)`);
 
   console.log('\nLENGTH (informativo):');
-  console.log(`  min: ${LENGTH.raw_min}  max: ${LENGTH.raw_max}`);
+  console.log(`  min: ${LENGTH.raw_min}  max: ${LENGTH.raw_max} (${LENGTH.source})`);
 }
 
 export default function collarCmd(file, opts) {

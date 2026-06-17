@@ -1,16 +1,22 @@
 import fs from 'fs';
-import { parseFile } from '../parser.js';
+import { parseFile } from '../core/parser.js';
 import { log } from '@clack/prompts';
 
-export default function auditCmd(filepath, opts) {
-  let data;
-  try {
-    data = parseFile(filepath);
-  } catch (err) {
-    throw new Error(`Error al leer el archivo: ${err.message}`);
+export function runAudit(filepath) {
+  if (!fs.existsSync(filepath)) {
+    throw new Error(`Archivo no encontrado: ${filepath}`);
   }
 
-  const { headers, rows, delim } = data;
+  const raw = fs.readFileSync(filepath, 'utf8');
+  const lines = raw.replace(/\r/g, '').split('\n').filter(Boolean);
+
+  if (lines.length < 2) {
+    throw new Error(`Archivo sin datos suficientes: ${filepath}`);
+  }
+
+  const firstLine = lines[0];
+  const delim = firstLine.includes('\t') ? '\t' : ',';
+  const headers = firstLine.split(delim).map(h => h.trim());
 
   let missingColumns = 0;
   let emptyValues = 0;
@@ -19,22 +25,23 @@ export default function auditCmd(filepath, opts) {
   const emptyPerColumn = {};
   headers.forEach(h => emptyPerColumn[h] = 0);
 
-  rows.forEach((row, rowIndex) => {
+  const dataLines = lines.slice(1);
+  dataLines.forEach((line) => {
+    const vals = line.split(delim);
+    
     // Check if row has different number of columns than headers
-    const rowKeys = Object.keys(row);
-    if (rowKeys.length !== headers.length) {
+    if (vals.length !== headers.length) {
       missingColumns++;
     }
 
     // Check for empty/null values and comma decimals
-    headers.forEach(h => {
-      const val = row[h];
-      if (val === undefined || val === null || val === '') {
+    headers.forEach((h, i) => {
+      const val = vals[i]?.trim() ?? '';
+      if (val === '') {
         emptyValues++;
         emptyPerColumn[h]++;
       } else {
         // Check for comma used as decimal
-        // A simple regex: digits followed by comma followed by digits
         if (/^-?\d+,\d+$/.test(val)) {
           commaDecimals++;
         }
@@ -42,8 +49,22 @@ export default function auditCmd(filepath, opts) {
     });
   });
 
+  return {
+    filepath,
+    totalRows: dataLines.length,
+    headers,
+    missingColumns,
+    emptyValues,
+    emptyPerColumn,
+    commaDecimals
+  };
+}
+
+export function printAudit(result) {
+  const { filepath, totalRows, headers, missingColumns, emptyValues, emptyPerColumn, commaDecimals } = result;
+
   log.info(`--- Reporte de Auditoría para: ${filepath} ---`);
-  log.info(`Total de filas: ${rows.length}`);
+  log.info(`Total de filas: ${totalRows}`);
   log.info(`Total de columnas: ${headers.length} (${headers.join(', ')})`);
   
   if (missingColumns > 0) {
@@ -71,4 +92,10 @@ export default function auditCmd(filepath, opts) {
   }
 
   log.info(`--- Fin del Reporte ---`);
+}
+
+export default function auditCmd(filepath, opts) {
+  const result = runAudit(filepath);
+  printAudit(result);
+  return result;
 }

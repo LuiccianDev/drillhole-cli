@@ -1,6 +1,9 @@
 import { runCollar }  from '../src/commands/collar.js';
 import { runAssay }   from '../src/commands/assay.js';
 import { runLitho }   from '../src/commands/litho.js';
+import { runAudit }   from '../src/commands/audit.js';
+import { runSchema }  from '../src/commands/schema.js';
+import fs from 'fs';
 
 let passed = 0;
 let failed = 0;
@@ -114,35 +117,66 @@ assert('no tiene TO',      !('TO'      in assay));
 
 // ── LITHO sin filtro ──────────────────────────────────────────────────────────
 console.log('\n[litho — sin filtro]');
-const litho = runLitho('litho.txt', { col: 'RX_CODE', freq: '0' });
-assert('tiene resultados',        Object.keys(litho).length > 0);
-assert('no incluye NS',           !('NS' in litho));
-assert('frequency es número',     typeof Object.values(litho)[0].frequency === 'number');
-assert('frequency > 0',           Object.values(litho)[0].frequency > 0);
+const litho = runLitho('litho.txt', { cols: ['RX_CODE'] });
+assert('tiene resultados',        litho['RX_CODE'].length > 0);
+assert('no incluye NS',           !litho['RX_CODE'].includes('NS'));
+assert('es un array ordenado',    Array.isArray(litho['RX_CODE']));
 
-// ── LITHO con frecuencia mínima ───────────────────────────────────────────────
-console.log('\n[litho — freq >= 6]');
-const lithoFreq = runLitho('litho.txt', { col: 'RX_CODE', freq: '6' });
-assert('tiene resultados',        Object.keys(lithoFreq).length > 0);
-assert('todos tienen freq >= 6',  Object.values(lithoFreq).every(v => v.frequency >= 6));
-
-// ── LITHO otras columnas ──────────────────────────────────────────────────────
-console.log('\n[litho — SIMPL_CODE]');
-const lithoSimpl = runLitho('litho.txt', { col: 'SIMPL_CODE', freq: '0' });
-assert('tiene resultados SIMPL_CODE', Object.keys(lithoSimpl).length > 0);
-
-console.log('\n[litho — ALT_CODE]');
-const lithoAlt = runLitho('litho.txt', { col: 'ALT_CODE', freq: '0' });
-assert('tiene resultados ALT_CODE',   Object.keys(lithoAlt).length > 0);
+// ── LITHO multiselect ──────────────────────────────────────────────────────
+console.log('\n[litho — multiselect]');
+const lithoMulti = runLitho('litho.txt', { cols: ['RX_CODE', 'SIMPL_CODE'] });
+assert('tiene RX_CODE',           'RX_CODE' in lithoMulti);
+assert('tiene SIMPL_CODE',        'SIMPL_CODE' in lithoMulti);
+assert('RX_CODE tiene valores',   lithoMulti['RX_CODE'].length > 0);
+assert('SIMPL_CODE tiene valores', lithoMulti['SIMPL_CODE'].length > 0);
 
 // ── LITHO columna inválida ────────────────────────────────────────────────────
 console.log('\n[litho — columna inválida]');
-try {
-  runLitho('litho.txt', { col: 'COLUMNA_FALSA' });
-  assert('debe lanzar error', false);
-} catch (e) {
-  assert('lanza error por columna inválida', e.message.includes('no existe'));
-}
+const lithoInvalid = runLitho('litho.txt', { cols: ['COLUMNA_FALSA', 'RX_CODE'] });
+assert('no tiene COLUMNA_FALSA', !('COLUMNA_FALSA' in lithoInvalid));
+assert('tiene RX_CODE',          'RX_CODE' in lithoInvalid);
+
+// ── COLLAR con externalMaxLen ────────────────────────────────────────────────
+console.log('\n[collar — externalMaxLen 500]');
+// Simulamos un archivo sin LENGTH (usamos header.txt pero forzamos externalMaxLen)
+const collarExt = runCollar('header.txt', { externalMaxLen: 500 });
+assert('usa externalMaxLen en ELEVATION', collarExt.ELEVATION.max_length === 500);
+assert('source es external source', collarExt.ELEVATION.len_source === 'external source');
+assert('ELEVATION min_boundary usa el 500', 
+  collarExt.ELEVATION.min_boundary <= (collarExt.ELEVATION.raw_min - 500));
+
+// ── AUDIT ────────────────────────────────────────────────────────────────────
+console.log('\n[audit — logic]');
+const fClean = 'test_clean.csv';
+const fErrors = 'test_errors.txt';
+fs.writeFileSync(fClean, 'ID,VAL\n1,10.5\n2,20.0');
+fs.writeFileSync(fErrors, 'ID\tVAL\n1\t10,5\n2\t\n3\t30.0\textra');
+
+const auditClean = runAudit(fClean);
+assert('audit clean: totalRows is 2', auditClean.totalRows === 2);
+assert('audit clean: missingColumns is 0', auditClean.missingColumns === 0);
+assert('audit clean: emptyValues is 0', auditClean.emptyValues === 0);
+
+const auditErrors = runAudit(fErrors);
+assert('audit errors: missingColumns is 1', auditErrors.missingColumns === 1);
+assert('audit errors: emptyValues is 1', auditErrors.emptyValues === 1);
+assert('audit errors: commaDecimals is 1', auditErrors.commaDecimals === 1);
+
+fs.unlinkSync(fClean);
+fs.unlinkSync(fErrors);
+
+// ── SCHEMA ───────────────────────────────────────────────────────────────────
+console.log('\n[schema — logic]');
+const fSchema = 'test_schema.csv';
+fs.writeFileSync(fSchema, 'TXT,INT,SNG,DBL\nA,1,1.1,1.123456789\nB,2,2.2,2.2');
+const schema = runSchema(fSchema);
+
+assert('TXT is text',    schema.TXT.type === 'text');
+assert('INT is integer', schema.INT.type === 'integer');
+assert('SNG is single',  schema.SNG.type === 'single');
+assert('DBL is double',  schema.DBL.type === 'double');
+
+fs.unlinkSync(fSchema);
 
 // ── RESUMEN ───────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(35));
