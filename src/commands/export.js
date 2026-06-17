@@ -9,6 +9,14 @@ export function exportData(data, name, format) {
     const mainRows = [];
     const rangesRows = [];
     
+    // Check if data is a flat array
+    if (Array.isArray(data)) {
+      mainRows.push(name);
+      data.forEach(val => mainRows.push(val));
+      fs.writeFileSync(mainFilename, mainRows.join('\n'), 'utf8');
+      return mainFilename;
+    }
+
     const firstVal = Object.values(data)[0];
     const subKeys = firstVal && typeof firstVal === 'object' 
       ? Object.keys(firstVal).filter(k => !Array.isArray(firstVal[k]))
@@ -52,6 +60,12 @@ export function exportData(data, name, format) {
     }
 
   } else {
+    // Check if data is a flat array for TXT
+    if (Array.isArray(data)) {
+      fs.writeFileSync(mainFilename, data.join('\n'), 'utf8');
+      return mainFilename;
+    }
+
     let content = `=== ${name.toUpperCase()} ===\n`;
     content += `Generado: ${new Date().toLocaleString()}\n`;
     content += '='.repeat(40) + '\n\n';

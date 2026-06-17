@@ -1,4 +1,4 @@
-import { parseColumns } from '../parser.js';
+import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
 
 const SKIP = ['HOLE_ID', 'FROM', 'TO', 'SAMPLE_#', 'SAMPLE'];
