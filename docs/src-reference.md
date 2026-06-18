@@ -1,103 +1,105 @@
-# Technical Reference: drill-cli internals
+# Technical Reference: drillhole-cli Internals
 
-This document provides a technical description of the `drill-cli` machinery, organized by its modular architecture. It is intended for developers maintaining or extending the tool.
+This document provides a technical description of the `drillhole-cli` machinery. It is intended for developers maintaining or extending the tool, focusing on its modular architecture and type-safe implementation.
 
 ## Architecture Overview
 
-The project uses a three-tier architecture:
-1.  **CLI Layer (`src/cli/`)**: Orchestrates user interaction and terminal visuals.
-2.  **Command Layer (`src/commands/`)**: Implements domain-specific mining logic (Collar, Assay, etc.).
-3.  **Core Layer (`src/core/`)**: Low-level utilities for file parsing and data extraction.
+The project follows a **Clean Architecture** pattern, strictly separating concerns into specialized layers to ensure scalability and maintainability.
+
+- **Types Layer (`src/types/`)**: The single source of truth for all data structures and generic constraints.
+- **Utility Layer (`src/utils/`)**: Pure, reusable functions for domain-agnostic logic (math, formatting).
+- **Constants Layer (`src/constants/`)**: Domain-specific business rules and configuration.
+- **Core Layer (`src/core/`)**: High-performance data ingestion engine.
+- **Command Layer (`src/commands/`)**: Modular implementations of mining-specific operations.
+- **CLI Layer (`src/cli/`)**: User interface orchestration and visual feedback.
 
 ---
 
-## Core Layer (`src/core/`)
+## Types Layer (`src/types/`)
 
-### `parser.js`
+All interfaces are centralized to avoid circular dependencies and ensure consistency.
 
-The engine for data extraction from `.csv` and `.txt` files.
+### `parser.ts`
+Defines the structure of raw data ingestion.
+- `ParseResult<T>`: Generic structure for row-based data.
+- `ColumnResult<T>`: Generic structure for column-oriented data.
+- `Delimiter`: Union type `',' | '\t'`.
 
-#### `parseFile(filepath)`
-Reads a file and returns an array of row objects.
-- **Input**: `string` (absolute or relative path).
-- **Output**: `{ headers: string[], rows: object[], delim: string }`.
-- **Behavior**: Detects `\t` or `,` automatically based on the first line.
-
-#### `parseColumns(filepath, maxRows?)`
-Parses data into a column-oriented structure (preferred for statistical calculations).
-- **Input**: `filepath` (string), `maxRows` (number, optional).
-- **Output**: `{ headers: string[], columns: object, delim: string }`.
-- **Structure**: `columns` is an object where keys are headers and values are arrays of strings.
-
-#### `getFilesInDir(dir?)`
-Scans a directory for supported mining data files.
-- **Input**: `dir` (string, defaults to `process.cwd()`).
-- **Output**: `string[]` (sorted list of `.txt` and `.csv` files).
+### `commands.ts`
+Defines contracts for CLI operations.
+- `VulcanDataType`: Literal union for schema inference (`'integer' | 'single' | 'double' | 'text'`).
+- `CollarResult`: Strictly typed result map including an `_headers` property with mapped keys `'E' | 'N' | 'Z' | 'L'`.
 
 ---
 
-## Command Layer (`src/commands/`)
+## The Generic Parser Engine (`src/core/`)
 
-### `collar.js`
+The core engine is optimized for performance using Node.js Streams and Readline interfaces.
 
-Calculates spatial boundaries for drillhole collars.
+### `parser.ts`
 
-#### `runCollar(file, opts)`
-Main processing logic for collar limits.
-- **Intelligent Mapping**: Searches for coordinates using the following priorities:
-    - **East**: `EASTING`, `EAST`, `X`, `XCOLLAR`.
-    - **North**: `NORTHING`, `NORTH`, `Y`, `YCOLLAR`.
-    - **Elev**: `ELEVATION`, `ELEV`, `Z`, `ZCOLLAR`.
-- **Options**:
-    - `buffer`: Numerical value to expand limits.
-    - `externalMaxLen`: Overrides internal `LENGTH` column if provided.
-- **Output**: A result object containing calculated `min_boundary` and `max_boundary` for E, N, and Z.
+#### `parseFile<T>(filepath)`
+Reads a file and returns an array of typed row objects.
+- **Constraint**: `T extends Record<string, string>`.
+- **Behavior**: Auto-detects delimiters and trims whitespace from headers and values.
 
-### `assay.js`
-
-Performs statistical range analysis.
-
-#### `runAssay(file, opts)`
-Calculates percentiles and grade ranges.
-- **Default Classes**: 6 (configurable via `opts.classes`).
-- **Logic**: Uses a linear interpolation algorithm for percentiles to ensure accuracy in small datasets.
+#### `parseColumns<T>(filepath, maxRows?)`
+Parses data into a column-oriented structure, ideal for statistical analysis.
+- **Optimization**: Can stop early if `maxRows` is provided (used for schema sampling).
+- **Structure**: `columns` is a `Record<keyof T, string[]>`.
 
 ---
 
-## CLI Layer (`src/cli/`)
+## Command Execution Layer (`src/commands/`)
 
-### `index.js`
+Each command follows a standard pattern: a `runX` function for logic and a default export for the CLI bridge.
 
-The interaction orchestrator.
-- **`runCli()`**: Asynchronous function that executes the main loop, handles `@clack/prompts` lifecycle, and delegates execution to the Command Layer.
+### Standard Pattern
+1.  **Input**: Receives a file path and a typed `Options` object.
+2.  **Processing**: Fetches data via `parseColumns` or `parseFile`.
+3.  **Transformation**: Applies mining logic using `src/utils/math.ts`.
+4.  **Result**: Returns a strictly typed `Result` object.
 
-### `banner.js`
-
-- **`printBanner()`**: Handles the animated fade-in of the ASCII art. Includes fallback for non-TTY environments.
+### Key Modules
+- **`collar.ts`**: Uses `COLLAR_COLUMN_MAP` from constants to identify coordinates and applies directional rounding.
+- **`assay.ts`**: Implements percentile-based binning for grade distribution.
+- **`schema.ts`**: Infers Vulcan-compatible data types based on value analysis.
 
 ---
 
-## Data Structures
+## Utility & Constant Reference
 
-### Result Object (Collar)
-```json
-{
-  "EASTING": { "raw_min": 0, "raw_max": 100, "min_boundary": -100, "max_boundary": 200 },
-  "NORTHING": { ... },
-  "ELEVATION": { "max_length": 50, "len_source": "external source", ... },
-  "_headers": { "E": "XCOLLAR", "N": "YCOLLAR", "Z": "ZCOLLAR", "L": null }
-}
-```
+### `src/utils/math.ts`
+- **`floorTo` / `ceilTo`**: Directional rounding to a specific unit.
+- **`percentile`**: Linear interpolation algorithm for precise binning.
 
-### Result Object (Assay)
-```json
-{
-  "AU": {
-    "raw_min": 0.01,
-    "raw_max": 15.5,
-    "ranges": [
-      { "clase": 1, "from": 0.01, "to": 0.5, "percentil_from": 0, "percentil_to": 16.6 }
-    ]
-  }
-}
+### `src/constants/mining.ts`
+- **`COLLAR_COLUMN_MAP`**: Priorities for coordinate identification (e.g., `X` -> `EASTING`).
+- **`ASSAY_SKIP_COLUMNS`**: Default blacklist for non-numeric assay analysis.
+
+---
+
+## Visual Orchestration (`src/cli/`)
+
+### Animated Banner (`banner.ts`)
+The `printBanner` function implements a "typewriter" effect using ANSI escape sequences:
+1.  **Construction**: Iteratively slices the word `DRILLHOLE`.
+2.  **Redrawing**: Uses `\x1b[nA` to move the cursor up and `\r\x1b[K` to clear lines, allowing in-place animation.
+3.  **Timing**: Managed via a local `sleep` utility for consistent frames.
+
+---
+
+## Data Flow Diagram
+
+```mermaid
+graph TD
+    A[File System] --> B[Core Parser]
+    B --> C{Command Layer}
+    D[Constants] -.-> C
+    E[Utils] -.-> C
+    C --> F[CLI Orchestrator]
+    F --> G[Terminal Output]
+    H[Types] --- B
+    H --- C
+    H --- F
 ```
