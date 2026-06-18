@@ -1,4 +1,4 @@
-<h1 align="center">drill-cli</h1>
+<h1 align="center">DRILLHOLE CLI</h1>
 
 <p align="center">
   <a href="https://nodejs.org/"><img alt="Node.js" src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=flat-square&logo=node.js&logoColor=white"/></a>
