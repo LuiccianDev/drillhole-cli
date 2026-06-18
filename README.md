@@ -1,78 +1,68 @@
-<h1 align="center">DRILLHOLE CLI</h1>
+<div align="center">
+
+# DRILLHOLE CLI
+**Professional Mining Data Assistant for Vulcan Software**
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=nodedotjs)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![Architecture](https://img.shields.io/badge/Architecture-Clean-orange?style=for-the-badge)](docs/src-reference.md)
+[![UI](https://img.shields.io/badge/UI-Clack--Prompts-blueviolet?style=for-the-badge)](https://github.com/natemoo-re/clack)
+[![ASCII](https://img.shields.io/badge/ASCII-Figlet-lightgrey?style=for-the-badge)](https://github.com/patorjk/figlet.js)
+
 
 <p align="center">
-  <a href="https://nodejs.org/"><img alt="Node.js" src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=flat-square&logo=node.js&logoColor=white"/></a>
-  <a href="https://pnpm.io/"><img alt="pnpm" src="https://img.shields.io/badge/pnpm-package%20manager-F69220?style=flat-square&logo=pnpm&logoColor=white"/></a>
-  <a href="https://github.com/natemoo-re/clack"><img alt="@clack/prompts" src="https://img.shields.io/badge/%40clack%2Fprompts-interactive%20CLI-6C47FF?style=flat-square&logo=gnometerminal&logoColor=white"/></a>
-  <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"/></a>
+  A high-performance, interactive command-line tool designed for geologists and data technicians to process drillhole data (.csv / .txt) and generate Vulcan-ready reports.
 </p>
 
-<p align="center">
-  A fast, interactive command-line tool for processing drillhole data files (<code>.csv</code> / <code>.txt</code>)<br/>
-  and generating statistics, limits, and reports ready for use in <strong>Vulcan</strong> mining software.
-</p>
+---
+</div>
 
-Built for geologists and data technicians who need quick, reliable summaries of assay grades, collar coordinates, lithology codes, and data schemas — directly from the terminal, without opening Excel.
-A fast, interactive command-line tool for processing drillhole data files (.csv / .txt) and generating statistics, limits, and reports ready for use in Vulcan mining software.
+## Concept and Purpose
 
-> [!IMPORTANT]
-> This tool is specifically designed for mining workflows, focusing on spatial boundaries, assay percentiles, and lithology legend extraction.
+drillhole-cli is designed to bridge the gap between raw field data and professional mining software. It automates the extraction of spatial limits, assay distributions, and lithological codes, ensuring that the data imported into Vulcan is accurate, validated, and strictly formatted.
 
-## Features
+---
 
-- **Audit File**: Validate data integrity, detect missing columns, null values, and incorrect decimal separators.
-- **Collar Limits**: Calculate spatial boundaries (min/max) for coordinates with directional rounding and optional buffering.
-- **Assay Ranges**: Perform percentile-based range analysis for chemical grades across multiple classes.
-- **Litho Values**: Extract unique lithology codes from one or more columns, ready for legend creation.
-- **Vulcan Types**: Infer Vulcan-compatible data types (text, integer, single, double) from your data.
+## Robust Architecture
 
-## Getting Started
+This project is built on a Clean Architecture principle, designed for scalability and technical rigor. By decoupling the core logic from terminal interactions, it provides a stable environment for critical mining data processing.
 
-### Prerequisites
+> [!TIP]
+> For a deep dive into the internal machinery, generics, and data flow, see the [Technical Reference](docs/src-reference.md).
 
-- [Node.js](https://nodejs.org/) v18 or later.
-- [pnpm](https://pnpm.io/) (recommended).
+### Modular Tiers
+*   **Strict Type System**: Centralized TypeScript definitions using advanced patterns (Mapped/Literal types) for compile-time safety.
+*   **Core Parser**: High-efficiency engine utilizing Node.js Streams to handle large datasets without memory overhead.
+*   **Domain Layers**: Dedicated spaces for business rules (constants) and mathematical logic (utils), ensuring a single source of truth for mining calculations.
 
-### Installation
+---
+
+## Mining Capabilities
+
+| Capability | Technical Goal |
+| :--- | :--- |
+| **Audit** | Validates data integrity and numeric consistency. |
+| **Collar** | Calculates spatial boundary limits with directional rounding. |
+| **Assay** | Performs statistical grade analysis via percentile classes. |
+| **Litho** | Extracts and sorts unique geological codes. |
+| **Schema** | Infers Vulcan-compatible single/double/integer data types. |
+
+---
+
+## Quick Start
 
 ```bash
+# Install
 pnpm install
-```
 
-### Usage
-
-To start the interactive interface:
-
-```bash
+# Run
 pnpm drill
-```
 
-The CLI will guide you through:
-1. Selecting an operation.
-2. Choosing a data file from your current directory.
-3. Configuring operation-specific options (e.g., buffer size, number of classes, or columns to analyze).
-4. Exporting the results to TXT or CSV.
-
-## Project Structure
-
-- `bin/`: CLI entry point.
-- `src/cli/`: Interactive UI layer using Clack prompts.
-- `src/core/`: Core parsing and data processing logic.
-- `src/commands/`: Implementation of individual data analysis operations.
-- `tests/`: Custom assertion-based test suite.
-
-## Testing
-
-Run the automated test suite to ensure data processing accuracy:
-
-```bash
+# Test
 pnpm test
 ```
 
-## Tech Stack
-
-- **Runtime**: Node.js (ES Modules)
-- **UI**: `@clack/prompts`
-- **Data Parsing**: Custom high-performance CSV/TXT parser.
-- **Package Management**: pnpm
-> For a full description of every module, function, and return type, see [docs/src-reference.md](./docs/src-reference.md).
+<div align="center">
+  Developed for Geologists | 2026
+</div>
