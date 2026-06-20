@@ -45,17 +45,18 @@ jspm_packages/
 # Mac OS X hidden files
 .DS_Store
 
-# Archivos exportados por el CLI de Vulcan
-*_limits_*.txt
-*_limits_*.csv
-litho_*_*.txt
-litho_*_*.csv
-schema_vulcan_*.txt
-schema_vulcan_*.csv
-
-# (Opcional) Si no deseas subir los datos crudos originales, descomenta las siguientes lineas:
-# *.txt
-# *.csv
-# !package.json
-
+dist/
 dist
+
+# Editor directories and files
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+[Dd]esktop.ini
+
+# Testing and coverage
+coverage/
+.nyc_output/
