@@ -1,62 +1,56 @@
 import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
+import type { AssayOptions, AssayResult, Range } from '../types/index.js';
+import { percentile, getMin, getMax } from '../utils/math.js';
+import { ASSAY_SKIP_COLUMNS } from '../constants/mining.js';
 
-const SKIP = ['HOLE_ID', 'FROM', 'TO', 'SAMPLE_#', 'SAMPLE'];
+const SKIP = ASSAY_SKIP_COLUMNS;
 
-function percentile(sorted, p) {
-  const idx = (p / 100) * (sorted.length - 1);
-  const lo  = Math.floor(idx);
-  const hi  = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  return +(sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo)).toFixed(6);
-}
-
-function calcRanges(vals, n) {
+function calcRanges(vals: number[], n: number): Range[] {
   const sorted = [...vals].sort((a, b) => a - b);
-  const step   = 100 / n;
-  const breaks = [];
+  const step = 100 / n;
+  const breaks: number[] = [];
   for (let i = 0; i <= n; i++) {
     breaks.push(percentile(sorted, i * step));
   }
   return Array.from({ length: n }, (_, i) => ({
-    clase:          i + 1,
-    from:           breaks[i],
-    to:             breaks[i + 1],
+    clase: i + 1,
+    from: breaks[i] ?? 0,
+    to: breaks[i + 1] ?? 0,
     percentil_from: +((i * step).toFixed(4)),
-    percentil_to:   +(((i + 1) * step).toFixed(4)),
+    percentil_to: +(((i + 1) * step).toFixed(4)),
   }));
 }
 
-export function runAssay(file, opts = {}) {
-  const { headers, columns } = parseColumns(file);
-  const nClases = parseInt(opts.classes   ?? 6);
-  const numCols = opts.cols && opts.cols.length > 0 
-    ? opts.cols 
-    : headers.filter(h => !SKIP.includes(h));
-  const result  = {};
+export async function runAssay(file: string, opts: AssayOptions = {}): Promise<AssayResult> {
+  const targetCols = opts.cols && opts.cols.length > 0 ? opts.cols : undefined;
+  const { headers, columns } = await parseColumns(file, 0, targetCols);
+  const nClases = typeof opts.classes === 'string' ? parseInt(opts.classes) : (opts.classes ?? 6);
+  const numCols = targetCols || headers.filter(h => !SKIP.includes(h));
+  const result: AssayResult = {};
 
   for (const col of numCols) {
-    const vals = columns[col]
+    const vals = (columns[col] ?? [])
       .map(v => parseFloat(v))
       .filter(v => !isNaN(v));
 
     if (!vals.length) continue;
 
-    const raw_min = Math.min(...vals);
-    const raw_max = Math.max(...vals);
+    const raw_min = getMin(vals);
+    const raw_max = getMax(vals);
 
     result[col] = {
       raw_min,
       raw_max,
-      count:        vals.length,
-      ranges:       calcRanges(vals, nClases),
+      count: vals.length,
+      ranges: calcRanges(vals, nClases),
     };
   }
 
   return result;
 }
 
-export function printAssay(result) {
+export function printAssay(result: AssayResult): void {
   console.log('\n=== ASSAY LIMITS ===');
   for (const [col, v] of Object.entries(result)) {
     console.log(`\n${col}:`);
@@ -73,11 +67,11 @@ export function printAssay(result) {
   }
 }
 
-export default function assayCmd(file, opts) {
-  const result = runAssay(file, opts);
+export default async function assayCmd(file: string, opts: AssayOptions) {
+  const result = await runAssay(file, opts);
   printAssay(result);
   if (opts.output) {
-    const f = exportData(result, 'assay_limits', opts.output);
+    const f = exportData(result, 'assay_limits', opts.output as any);
     const files = Array.isArray(f) ? f : [f];
     console.log(`\nExportado:`);
     files.forEach(file => console.log(`  - ${file}`));
