@@ -7,7 +7,7 @@ import lithoCmd from '../commands/litho.js';
 import schemaCmd from '../commands/schema.js';
 import auditCmd from '../commands/audit.js';
 
-import { AssayOptions, CollarOptions, LithoOptions } from '../types/index.js';
+import type { AssayOptions, CollarOptions, LithoOptions } from '../types/index.js';
 
 type Operation = 'audit' | 'collar' | 'assay' | 'litho' | 'schema';
 
@@ -21,13 +21,13 @@ function checkCancel<T>(val: T | symbol): T {
   return val as T;
 }
 
-export async function runCli() {
+export async function runCli(baseDir: string) {
   await printBanner();
 
-  // 1. Detecta archivos en la carpeta actual
-  const files = getFilesInDir(process.cwd());
+  // 1. Detecta archivos en la carpeta indicada
+  const files = getFilesInDir(baseDir);
   if (!files.length) {
-    cancel('No se encontraron archivos .txt o .csv en esta carpeta.');
+    cancel(`No se encontraron archivos .txt o .csv en la carpeta: ${baseDir}`);
     process.exit(1);
   }
 
@@ -48,6 +48,8 @@ export async function runCli() {
     message: 'Selecciona archivo:',
     options: files.map(f => ({ value: f, label: f }))
   })) as string;
+  
+  const filePath = `${baseDir}/${file}`;
 
   // 4. Formato exportación
   let output: string | undefined;
@@ -73,7 +75,7 @@ export async function runCli() {
     opts.buffer = buf;
 
     // Verificar si tiene columna LENGTH
-    const { headers } = await parseFile(file);
+    const { headers } = await parseFile(filePath);
     if (!headers.includes('LENGTH')) {
       const useExternal = checkCancel(await select({
         message: 'Columna LENGTH no encontrada. ¿Deseas usar otro archivo para la profundidad máxima?',
@@ -89,13 +91,13 @@ export async function runCli() {
           options: files.map(f => ({ value: f, label: f }))
         })) as string;
 
-        const { headers: extHeaders, columns: extCols } = await parseColumns(extFile);
+        const { headers: extHeaders, columns: extCols } = await parseColumns(`${baseDir}/${extFile}`);
         const extCol = checkCancel(await select({
           message: 'Selecciona columna de profundidad:',
           options: extHeaders.map(h => ({ value: h, label: h }))
         })) as string;
 
-        const vals = (extCols[extCol] || []).map(v => parseFloat(v)).filter(v => !isNaN(v));
+        const vals = (extCols[extCol] ?? []).map(v => parseFloat(v)).filter(v => !isNaN(v));
         if (vals.length > 0) {
           opts.externalMaxLen = Math.max(...vals);
         }
@@ -104,7 +106,7 @@ export async function runCli() {
   }
 
   if (operation === 'assay') {
-    const { headers } = await parseFile(file);
+    const { headers } = await parseFile(filePath);
     const selectedCols = checkCancel(await multiselect({
       message: 'Selecciona las columnas a analizar (Usa Espacio para seleccionar, Enter para confirmar):',
       options: headers.map(h => ({ value: h, label: h })),
@@ -121,7 +123,7 @@ export async function runCli() {
   }
 
   if (operation === 'litho') {
-    const { headers } = await parseFile(file);
+    const { headers } = await parseFile(filePath);
     const lithoHeaders = headers.filter(h => !['BHID', 'HOLE_ID', 'FROM', 'TO', 'LENGTH', 'X', 'Y', 'Z'].includes(h.toUpperCase()));
 
     const selectedCols = checkCancel(await multiselect({
@@ -137,11 +139,11 @@ export async function runCli() {
   s.start('Procesando...');
 
   try {
-    if (operation === 'audit') await auditCmd(file, opts);
-    else if (operation === 'collar') await collarCmd(file, opts);
-    else if (operation === 'assay') await assayCmd(file, opts);
-    else if (operation === 'litho') await lithoCmd(file, opts);
-    else if (operation === 'schema') await schemaCmd(file, opts);
+    if (operation === 'audit') await auditCmd(filePath, opts);
+    else if (operation === 'collar') await collarCmd(filePath, opts);
+    else if (operation === 'assay') await assayCmd(filePath, opts);
+    else if (operation === 'litho') await lithoCmd(filePath, opts);
+    else if (operation === 'schema') await schemaCmd(filePath, opts);
     s.stop('Listo.');
     await new Promise(resolve => setTimeout(resolve, 300));
   } catch (err: any) {

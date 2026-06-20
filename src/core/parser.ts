@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import { Delimiter, ParseResult, ColumnResult } from '../types/index.js';
+import type { Delimiter, ParseResult, ColumnResult } from '../types/index.js';
 
 /**
  * Detects delimiter and gets headers from the first line of a file.
@@ -29,36 +29,63 @@ async function getFileMeta(filepath: string): Promise<{ headers: string[]; delim
 }
 
 /**
+ * Validates and resolves the filepath to prevent path traversal
+ * and ensure it is a .csv or .txt file.
+ */
+export function validateSafePath(filepath: string): string {
+  const resolved = path.resolve(filepath);
+  const ext = path.extname(resolved).toLowerCase();
+  if (ext !== '.csv' && ext !== '.txt') {
+    throw new Error('Solo se permiten archivos con extensión .csv o .txt');
+  }
+
+  // Prevenir path traversal fuera del directorio de trabajo actual
+  const cwd = path.resolve(process.cwd());
+  if (!resolved.startsWith(cwd)) {
+    throw new Error('Acceso denegado: El archivo debe estar dentro del directorio de trabajo actual.');
+  }
+
+  return resolved;
+}
+
+/**
  * Parses file into an array of objects (rows).
- * Optimized with streams to avoid loading the entire file as a single string.
+ * Optimized with streams and proper cleanup to avoid leaks.
  */
 export async function parseFile<T extends Record<string, string> = Record<string, string>>(
   filepath: string
 ): Promise<ParseResult<T>> {
-  if (!fs.existsSync(filepath)) {
+  const safePath = validateSafePath(filepath);
+  if (!fs.existsSync(safePath)) {
     throw new Error(`Archivo no encontrado: ${filepath}`);
   }
 
-  const { headers, delim } = await getFileMeta(filepath);
+  const { headers, delim } = await getFileMeta(safePath);
   const rows: T[] = [];
 
-  const stream = fs.createReadStream(filepath);
+  const stream = fs.createReadStream(safePath);
   const rl = readline.createInterface({ input: stream });
 
-  let isHeader = true;
-  for await (const line of rl) {
-    if (isHeader) {
-      isHeader = false;
-      continue;
-    }
-    if (!line.trim()) continue;
+  try {
+    let isHeader = true;
+    for await (const line of rl) {
+      if (isHeader) {
+        isHeader = false;
+        continue;
+      }
+      if (!line.trim()) continue;
 
-    const vals = line.split(delim);
-    const row = {} as T;
-    for (let i = 0; i < headers.length; i++) {
-      (row as any)[headers[i]] = vals[i]?.trim() ?? '';
+      const vals = line.split(delim);
+      const row = {} as T;
+      for (let i = 0; i < headers.length; i++) {
+        const h = headers[i];
+        if (h) (row as any)[h] = vals[i]?.trim() ?? '';
+      }
+      rows.push(row);
     }
-    rows.push(row);
+  } finally {
+    rl.close();
+    stream.destroy();
   }
 
   return { headers: headers as (keyof T & string)[], rows, delim };
@@ -67,51 +94,73 @@ export async function parseFile<T extends Record<string, string> = Record<string
 /**
  * Parses file into columns (arrays of values).
  * More efficient for statistical analysis of specific columns.
+ * Supports targetColumns to perform lazy/selective column parsing.
  */
 export async function parseColumns<T extends Record<string, string> = Record<string, string>>(
   filepath: string, 
-  maxRows = 0
+  maxRows = 0,
+  targetColumns?: (keyof T & string)[]
 ): Promise<ColumnResult<T>> {
-  if (!fs.existsSync(filepath)) {
+  const safePath = validateSafePath(filepath);
+  if (!fs.existsSync(safePath)) {
     throw new Error(`Archivo no encontrado: ${filepath}`);
   }
 
-  const { headers, delim } = await getFileMeta(filepath);
+  const { headers, delim } = await getFileMeta(safePath);
+  
+  // Si targetColumns está definido, solo guardamos en memoria esas columnas
+  const selectedHeaders = targetColumns && targetColumns.length > 0 
+    ? headers.filter(h => targetColumns.includes(h as keyof T & string))
+    : headers;
+
   const columns = {} as Record<keyof T & string, string[]>;
-  for (const h of headers) {
+  for (const h of selectedHeaders) {
     columns[h as keyof T & string] = [];
   }
 
-  const stream = fs.createReadStream(filepath);
+  const stream = fs.createReadStream(safePath);
   const rl = readline.createInterface({ input: stream });
 
-  let isHeader = true;
-  let count = 0;
-  for await (const line of rl) {
-    if (isHeader) {
-      isHeader = false;
-      continue;
-    }
-    if (!line.trim()) continue;
+  try {
+    let isHeader = true;
+    let count = 0;
+    for await (const line of rl) {
+      if (isHeader) {
+        isHeader = false;
+        continue;
+      }
+      if (!line.trim()) continue;
 
-    const vals = line.split(delim);
-    for (let i = 0; i < headers.length; i++) {
-      columns[headers[i] as keyof T & string].push(vals[i]?.trim() ?? '');
-    }
+      const vals = line.split(delim);
+      for (let i = 0; i < headers.length; i++) {
+        const h = headers[i];
+        if (h && columns[h as keyof T & string] !== undefined) {
+          columns[h as keyof T & string].push(vals[i]?.trim() ?? '');
+        }
+      }
 
-    count++;
-    if (maxRows > 0 && count >= maxRows) break;
+      count++;
+      if (maxRows > 0 && count >= maxRows) break;
+    }
+  } finally {
+    rl.close();
+    stream.destroy();
   }
-  
-  rl.close();
-  stream.destroy();
 
   return { headers: headers as (keyof T & string)[], columns, delim };
 }
 
 export function getFilesInDir(dir = process.cwd()): string[] {
   const allowed = ['.txt', '.csv'];
-  return fs.readdirSync(dir)
+  const resolvedDir = path.resolve(dir);
+  
+  // Prevenir listado de directorios fuera del directorio de trabajo
+  const cwd = path.resolve(process.cwd());
+  if (!resolvedDir.startsWith(cwd)) {
+    throw new Error('Acceso denegado: El directorio debe estar dentro del de trabajo actual.');
+  }
+
+  return fs.readdirSync(resolvedDir)
     .filter((f: string) => allowed.includes(path.extname(f).toLowerCase()))
     .sort();
 }

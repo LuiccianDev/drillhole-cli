@@ -1,6 +1,6 @@
 import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
-import { LithoOptions, LithoResult } from '../types/index.js';
+import type { LithoOptions, LithoResult } from '../types/index.js';
 import { LITHO_KEYWORDS } from '../constants/mining.js';
 
 export async function runLitho(file: string, opts: LithoOptions = {}): Promise<LithoResult> {
@@ -12,7 +12,7 @@ export async function runLitho(file: string, opts: LithoOptions = {}): Promise<L
   const result: LithoResult = {};
 
   for (const col of targetCols) {
-    const vals = columns[col] || [];
+    const vals = columns[col] ?? [];
     const unique = [...new Set(vals.map(v => v.trim()).filter(Boolean))].sort();
     result[col] = unique;
   }

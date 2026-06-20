@@ -1,5 +1,5 @@
 import { parseFile } from '../core/parser.js';
-import { AuditResult, ColumnAudit } from '../types/index.js';
+import type { AuditResult, ColumnAudit } from '../types/index.js';
 
 export async function runAudit(file: string): Promise<AuditResult> {
   const { headers, rows } = await parseFile(file);

@@ -2,6 +2,16 @@
 
 This document provides a technical description of the `drillhole-cli` machinery. It is intended for developers maintaining or extending the tool, focusing on its modular architecture and type-safe implementation.
 
+## CLI Usage
+
+The CLI supports the following arguments for flexible data ingestion:
+
+- `pnpm drill`: Runs in the current directory.
+- `pnpm drill --dir <path>` or `pnpm drill -d <path>`: Runs in the specified directory.
+- `pnpm drill --help` or `pnpm drill -h`: Displays this help message.
+
+---
+
 ## Architecture Overview
 
 The project follows a **Clean Architecture** pattern, strictly separating concerns into specialized layers to ensure scalability and maintainability.
@@ -12,6 +22,18 @@ The project follows a **Clean Architecture** pattern, strictly separating concer
 - **Core Layer (`src/core/`)**: High-performance data ingestion engine.
 - **Command Layer (`src/commands/`)**: Modular implementations of mining-specific operations.
 - **CLI Layer (`src/cli/`)**: User interface orchestration and visual feedback.
+
+---
+
+## Development Standards & TypeScript Configuration
+
+To ensure maximum safety and maintainability, the project enforces strict TypeScript rules in `tsconfig.json`:
+
+- `"strict": true`: Full type safety.
+- `"noUncheckedIndexedAccess": true`: Enforces safety checks when accessing object properties or array indices, preventing undefined-related runtime errors.
+- `"isolatedModules": true`: Ensures compatibility with modern fast transpilers.
+- `"verbatimModuleSyntax": true`: Enforces explicit type-only imports (`import type`), crucial for ESM compatibility.
+- `"sourceMap": true`: Enables direct debugging of TypeScript source code.
 
 ---
 
@@ -57,7 +79,7 @@ Each command follows a standard pattern: a `runX` function for logic and a defau
 ### Standard Pattern
 1.  **Input**: Receives a file path and a typed `Options` object.
 2.  **Processing**: Fetches data via `parseColumns` or `parseFile`.
-3.  **Transformation**: Applies mining logic using `src/utils/math.ts`.
+3.  **Transformation**: Applies mining logic using `src/utils/math.ts`, ensuring safe handling of potentially undefined values as mandated by `noUncheckedIndexedAccess`.
 4.  **Result**: Returns a strictly typed `Result` object.
 
 ### Key Modules
@@ -71,7 +93,7 @@ Each command follows a standard pattern: a `runX` function for logic and a defau
 
 ### `src/utils/math.ts`
 - **`floorTo` / `ceilTo`**: Directional rounding to a specific unit.
-- **`percentile`**: Linear interpolation algorithm for precise binning.
+- **`percentile`**: Linear interpolation algorithm for precise binning, safe against `undefined` indices.
 
 ### `src/constants/mining.ts`
 - **`COLLAR_COLUMN_MAP`**: Priorities for coordinate identification (e.g., `X` -> `EASTING`).

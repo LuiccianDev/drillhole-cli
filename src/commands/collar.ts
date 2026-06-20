@@ -1,12 +1,12 @@
 import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
-import { CollarOptions, CollarResult, LimitResult, ElevationResult } from '../types/index.js';
-import { floorTo, ceilTo } from '../utils/math.js';
+import type { CollarOptions, CollarResult, LimitResult, ElevationResult } from '../types/index.js';
+import { floorTo, ceilTo, getMin, getMax } from '../utils/math.js';
 import { COLLAR_COLUMN_MAP } from '../constants/mining.js';
 
 function calcLimits(vals: number[], unit: number, bufferXY: number, isZ = false): LimitResult {
-  const raw_min = Math.min(...vals);
-  const raw_max = Math.max(...vals);
+  const raw_min = getMin(vals);
+  const raw_max = getMax(vals);
 
   // Redondeo base
   const rounded_min = floorTo(raw_min, unit);
@@ -24,17 +24,22 @@ function calcLimits(vals: number[], unit: number, bufferXY: number, isZ = false)
 }
 
 export async function runCollar(file: string, opts: CollarOptions = {}): Promise<CollarResult> {
-  const { columns, headers } = await parseColumns(file);
-  const buffer = typeof opts.buffer === 'string' ? parseFloat(opts.buffer) : (opts.buffer ?? 0);
-
-  // Mapeo flexible de columnas comunes
   const map = COLLAR_COLUMN_MAP;
+  const targetCols = [
+    ...map.EASTING,
+    ...map.NORTHING,
+    ...map.ELEVATION,
+    ...map.LENGTH
+  ];
+  
+  const { columns, headers } = await parseColumns(file, 0, targetCols);
+  const buffer = typeof opts.buffer === 'string' ? parseFloat(opts.buffer) : (opts.buffer ?? 0);
 
   const findCol = (keys: readonly string[]) => keys.find(k => headers.includes(k));
 
   const get = (keys: readonly string[]) => {
     const col = findCol(keys);
-    return col ? (columns[col] || []).map(v => parseFloat(v)).filter(v => !isNaN(v)) : [];
+    return col ? (columns[col] ?? []).map(v => parseFloat(v)).filter(v => !isNaN(v)) : [];
   };
 
   const eastVals = get(map.EASTING);
@@ -66,7 +71,7 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
   //   max_z = MAX(ELEVATION)                → redondeo decena, buffer /10
   
   // Si no hay LENGTH en el archivo, usamos externalMaxLen si existe
-  let maxLen = lenVals.length > 0 ? Math.max(...lenVals) : 0;
+  let maxLen = lenVals.length > 0 ? getMax(lenVals) : 0;
   let source = usedHeaders.L || 'LENGTH column';
 
   if (opts.externalMaxLen !== undefined) {
@@ -74,8 +79,8 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
     source = 'external source';
   }
 
-  const minElev = Math.min(...elevVals);
-  const maxElev = Math.max(...elevVals);
+  const minElev = getMin(elevVals);
+  const maxElev = getMax(elevVals);
   const buf_z = buffer / 10;
 
   const elevation: ElevationResult = {
@@ -89,7 +94,7 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
 
   // LENGTH — solo informativo, sin redondeo ni buffer
   const length = {
-    raw_min: lenVals.length > 0 ? Math.min(...lenVals) : 0,
+    raw_min: lenVals.length > 0 ? getMin(lenVals) : 0,
     raw_max: maxLen,
     source: source
   };

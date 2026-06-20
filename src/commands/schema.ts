@@ -1,12 +1,12 @@
 import { parseColumns } from '../core/parser.js';
-import { SchemaResult, VulcanDataType } from '../types/index.js';
+import type { SchemaResult, VulcanDataType } from '../types/index.js';
 
 export async function runSchema(file: string): Promise<SchemaResult> {
   // Solo necesitamos una muestra para inferir tipos, pero por seguridad analizamos más
   const { headers, columns } = await parseColumns(file, 500);
   
   const schema: SchemaResult = headers.map(h => {
-    const vals = (columns[h] || []).filter(Boolean);
+    const vals = (columns[h] ?? []).filter(Boolean);
     if (!vals.length) return { column: h, type: 'text (empty)', maxLength: 0 };
 
     let isNumeric = true;

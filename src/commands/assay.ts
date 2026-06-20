@@ -1,7 +1,7 @@
 import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
-import { AssayOptions, AssayResult, Range } from '../types/index.js';
-import { percentile } from '../utils/math.js';
+import type { AssayOptions, AssayResult, Range } from '../types/index.js';
+import { percentile, getMin, getMax } from '../utils/math.js';
 import { ASSAY_SKIP_COLUMNS } from '../constants/mining.js';
 
 const SKIP = ASSAY_SKIP_COLUMNS;
@@ -15,30 +15,29 @@ function calcRanges(vals: number[], n: number): Range[] {
   }
   return Array.from({ length: n }, (_, i) => ({
     clase: i + 1,
-    from: breaks[i],
-    to: breaks[i + 1],
+    from: breaks[i] ?? 0,
+    to: breaks[i + 1] ?? 0,
     percentil_from: +((i * step).toFixed(4)),
     percentil_to: +(((i + 1) * step).toFixed(4)),
   }));
 }
 
 export async function runAssay(file: string, opts: AssayOptions = {}): Promise<AssayResult> {
-  const { headers, columns } = await parseColumns(file);
+  const targetCols = opts.cols && opts.cols.length > 0 ? opts.cols : undefined;
+  const { headers, columns } = await parseColumns(file, 0, targetCols);
   const nClases = typeof opts.classes === 'string' ? parseInt(opts.classes) : (opts.classes ?? 6);
-  const numCols = opts.cols && opts.cols.length > 0 
-    ? opts.cols 
-    : headers.filter(h => !SKIP.includes(h));
+  const numCols = targetCols || headers.filter(h => !SKIP.includes(h));
   const result: AssayResult = {};
 
   for (const col of numCols) {
-    const vals = (columns[col] || [])
+    const vals = (columns[col] ?? [])
       .map(v => parseFloat(v))
       .filter(v => !isNaN(v));
 
     if (!vals.length) continue;
 
-    const raw_min = Math.min(...vals);
-    const raw_max = Math.max(...vals);
+    const raw_min = getMin(vals);
+    const raw_max = getMax(vals);
 
     result[col] = {
       raw_min,
