@@ -57,3 +57,5 @@ schema_vulcan_*.csv
 # *.txt
 # *.csv
 # !package.json
+
+dist
