@@ -1,11 +1,11 @@
 import { parseColumns } from '../core/parser.js';
-import type { SchemaResult, VulcanDataType } from '../types/index.js';
+import type { SchemaResult, VulcanDataType, SchemaOptions } from '../types/index.js';
 
-export async function runSchema(file: string): Promise<SchemaResult> {
+export async function runSchema(file: string, opts: SchemaOptions = {}): Promise<SchemaResult> {
   // Solo necesitamos una muestra para inferir tipos, pero por seguridad analizamos más
-  const { headers, columns } = await parseColumns(file, 500);
-  
-  const schema: SchemaResult = headers.map(h => {
+  const { headers, columns } = await parseColumns(file, 500, undefined, opts.baseDir);
+
+  const schema: SchemaResult = headers.map((h) => {
     const vals = (columns[h] ?? []).filter(Boolean);
     if (!vals.length) return { column: h, type: 'text (empty)', maxLength: 0 };
 
@@ -47,8 +47,8 @@ export function printSchema(schema: SchemaResult) {
   console.log(' - text   : Cadenas de caracteres');
 }
 
-export default async function schemaCmd(file: string, opts: Record<string, any>) {
-  const result = await runSchema(file);
+export default async function schemaCmd(file: string, opts: SchemaOptions = {}) {
+  const result = await runSchema(file, opts);
   printSchema(result);
   return result;
 }

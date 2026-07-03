@@ -1,9 +1,9 @@
 import { parseFile } from '../core/parser.js';
-import type { AuditResult, ColumnAudit } from '../types/index.js';
+import type { AuditResult, ColumnAudit, AuditOptions } from '../types/index.js';
 
-export async function runAudit(file: string): Promise<AuditResult> {
-  const { headers, rows } = await parseFile(file);
-  
+export async function runAudit(file: string, opts: AuditOptions = {}): Promise<AuditResult> {
+  const { headers, rows } = await parseFile(file, opts.baseDir);
+
   const stats = {
     total_rows: rows.length,
     columns: headers.length,
@@ -11,11 +11,11 @@ export async function runAudit(file: string): Promise<AuditResult> {
     numeric_cols: 0,
   };
 
-  const colInfo: ColumnAudit[] = headers.map(h => {
+  const colInfo: ColumnAudit[] = headers.map((h) => {
     let nullCount = 0;
     let isNumeric = true;
-    
-    rows.forEach(r => {
+
+    rows.forEach((r) => {
       if (!r[h]) nullCount++;
       if (r[h] && isNaN(Number(r[h]))) isNumeric = false;
     });
@@ -41,8 +41,8 @@ export function printAudit(result: AuditResult) {
   console.table(colInfo);
 }
 
-export default async function auditCmd(file: string, opts: Record<string, any>) {
-  const result = await runAudit(file);
+export default async function auditCmd(file: string, opts: AuditOptions = {}) {
+  const result = await runAudit(file, opts);
   printAudit(result);
   return result;
 }

@@ -4,16 +4,17 @@ import type { LithoOptions, LithoResult } from '../types/index.js';
 import { LITHO_KEYWORDS } from '../constants/mining.js';
 
 export async function runLitho(file: string, opts: LithoOptions = {}): Promise<LithoResult> {
-  const { headers, columns } = await parseColumns(file);
-  const targetCols = opts.cols && opts.cols.length > 0 
-    ? opts.cols 
-    : headers.filter(h => LITHO_KEYWORDS.some(k => h.toUpperCase().includes(k)));
+  const { headers, columns } = await parseColumns(file, 0, undefined, opts.baseDir);
+  const targetCols =
+    opts.cols && opts.cols.length > 0
+      ? opts.cols
+      : headers.filter((h) => LITHO_KEYWORDS.some((k) => h.toUpperCase().includes(k)));
 
   const result: LithoResult = {};
 
   for (const col of targetCols) {
     const vals = columns[col] ?? [];
-    const unique = [...new Set(vals.map(v => v.trim()).filter(Boolean))].sort();
+    const unique = [...new Set(vals.map((v) => v.trim()).filter(Boolean))].sort();
     result[col] = unique;
   }
 

@@ -25,21 +25,16 @@ function calcLimits(vals: number[], unit: number, bufferXY: number, isZ = false)
 
 export async function runCollar(file: string, opts: CollarOptions = {}): Promise<CollarResult> {
   const map = COLLAR_COLUMN_MAP;
-  const targetCols = [
-    ...map.EASTING,
-    ...map.NORTHING,
-    ...map.ELEVATION,
-    ...map.LENGTH
-  ];
-  
-  const { columns, headers } = await parseColumns(file, 0, targetCols);
+  const targetCols = [...map.EASTING, ...map.NORTHING, ...map.ELEVATION, ...map.LENGTH];
+
+  const { columns, headers } = await parseColumns(file, 0, targetCols, opts.baseDir);
   const buffer = typeof opts.buffer === 'string' ? parseFloat(opts.buffer) : (opts.buffer ?? 0);
 
-  const findCol = (keys: readonly string[]) => keys.find(k => headers.includes(k));
+  const findCol = (keys: readonly string[]) => keys.find((k) => headers.includes(k));
 
   const get = (keys: readonly string[]) => {
     const col = findCol(keys);
-    return col ? (columns[col] ?? []).map(v => parseFloat(v)).filter(v => !isNaN(v)) : [];
+    return col ? (columns[col] ?? []).map((v) => parseFloat(v)).filter((v) => !isNaN(v)) : [];
   };
 
   const eastVals = get(map.EASTING);
@@ -49,7 +44,9 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
 
   // Validación: si no hay datos en las coordenadas principales
   if (!eastVals.length || !northVals.length || !elevVals.length) {
-    throw new Error('No se encontraron columnas de coordenadas válidas (X/Y/Z). Revisa los encabezados del archivo.');
+    throw new Error(
+      'No se encontraron columnas de coordenadas válidas (X/Y/Z). Revisa los encabezados del archivo.',
+    );
   }
 
   // Identificar qué encabezados se usaron para el reporte
@@ -57,7 +54,7 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
     E: findCol(map.EASTING),
     N: findCol(map.NORTHING),
     Z: findCol(map.ELEVATION),
-    L: findCol(map.LENGTH)
+    L: findCol(map.LENGTH),
   };
 
   // EASTING — 6 dígitos → redondeo centena, buffer x100
@@ -69,13 +66,16 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
   // ELEVATION (Z):
   //   min_z = MIN(ELEVATION) - MAX(LENGTH)  → redondeo decena, buffer /10
   //   max_z = MAX(ELEVATION)                → redondeo decena, buffer /10
-  
+
   // Si no hay LENGTH en el archivo, usamos externalMaxLen si existe
   let maxLen = lenVals.length > 0 ? getMax(lenVals) : 0;
   let source = usedHeaders.L || 'LENGTH column';
 
   if (opts.externalMaxLen !== undefined) {
-    maxLen = typeof opts.externalMaxLen === 'string' ? parseFloat(opts.externalMaxLen) : opts.externalMaxLen;
+    maxLen =
+      typeof opts.externalMaxLen === 'string'
+        ? parseFloat(opts.externalMaxLen)
+        : opts.externalMaxLen;
     source = 'external source';
   }
 
@@ -96,7 +96,7 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
   const length = {
     raw_min: lenVals.length > 0 ? getMin(lenVals) : 0,
     raw_max: maxLen,
-    source: source
+    source: source,
   };
 
   return {
@@ -104,7 +104,7 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
     NORTHING: northing,
     ELEVATION: elevation,
     LENGTH: length,
-    _headers: usedHeaders
+    _headers: usedHeaders,
   };
 }
 
@@ -126,7 +126,9 @@ export function printCollar(result: CollarResult): void {
   console.log('\nELEVATION (Z):');
   console.log(`  raw_elev    : [${ELEVATION.raw_min}, ${ELEVATION.raw_max}]`);
   console.log(`  max_length  : ${ELEVATION.max_length} (${ELEVATION.len_source})`);
-  console.log(`  min_boundary: ${ELEVATION.min_boundary}  (MIN_ELEV - MAX_LENGTH, redondeo decena)`);
+  console.log(
+    `  min_boundary: ${ELEVATION.min_boundary}  (MIN_ELEV - MAX_LENGTH, redondeo decena)`,
+  );
   console.log(`  max_boundary: ${ELEVATION.max_boundary}  (MAX_ELEV, redondeo decena)`);
 
   console.log('\nLENGTH (informativo):');

@@ -11,17 +11,21 @@ export interface Range {
 /**
  * Mapped type for Assay results, ensuring every key maps to a consistent statistical object.
  */
-export type AssayResult = Record<string, {
-  raw_min: number;
-  raw_max: number;
-  count: number;
-  ranges: Range[];
-}>;
+export type AssayResult = Record<
+  string,
+  {
+    raw_min: number;
+    raw_max: number;
+    count: number;
+    ranges: Range[];
+  }
+>;
 
 export interface AssayOptions {
   classes?: string | number;
   cols?: string[];
   output?: string;
+  baseDir?: string;
 }
 
 export interface LimitResult {
@@ -55,6 +59,7 @@ export interface CollarOptions {
   buffer?: string | number;
   externalMaxLen?: string | number;
   output?: string;
+  baseDir?: string;
 }
 
 export interface ColumnAudit {
@@ -76,6 +81,33 @@ export interface AuditResult {
 export interface LithoOptions {
   cols?: string[];
   output?: string;
+  baseDir?: string;
+}
+
+export interface AuditOptions {
+  output?: string;
+  baseDir?: string;
+}
+
+export interface SchemaOptions {
+  output?: string;
+  baseDir?: string;
+}
+
+export interface RunnerOptions {
+  dir: string;
+  file: string;
+  operation: 'audit' | 'collar' | 'assay' | 'litho' | 'schema';
+  noBanner: boolean;
+  format?: 'csv' | 'txt';
+  outdir?: string;
+  buffer?: string;
+  classes?: string;
+  cols?: string[];
+}
+
+export interface CliGlobalOptions {
+  noBanner?: boolean;
 }
 
 export type LithoResult = Record<string, string[]>;
