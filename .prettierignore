@@ -1,0 +1,9 @@
+dist/
+node_modules/
+exports/
+*.js
+scripts/
+pnpm-lock.yaml
+coverage/
+.eslintcache
+*.tsbuildinfo

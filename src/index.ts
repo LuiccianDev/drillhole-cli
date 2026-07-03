@@ -45,7 +45,7 @@ const noBanner = args.includes('--no-banner') || args.includes('-q');
 
 // Directorio base
 let dir = process.cwd();
-const dirIndex = args.findIndex(a => a === '--dir' || a === '-d');
+const dirIndex = args.findIndex((a) => a === '--dir' || a === '-d');
 if (dirIndex !== -1) {
   const val = args[dirIndex + 1];
   if (val) dir = val;
@@ -61,11 +61,11 @@ const OP_MAP: Record<string, RunnerOptions['operation']> = {
   '--schema': 'schema',
 };
 
-const activeOpFlag = OPERATIONS.find(op => args.includes(op));
+const activeOpFlag = OPERATIONS.find((op) => args.includes(op));
 
 if (!activeOpFlag) {
   // ── MODO INTERACTIVO ──
-  await runCli(dir, { noBanner }).catch(err => {
+  await runCli(dir, { noBanner }).catch((err) => {
     console.error(err);
     process.exit(1);
   });
@@ -85,7 +85,12 @@ if (!activeOpFlag) {
   const classes = getArg('--classes');
   const outdir = getArg('--outdir');
   const colsRaw = getArg('--cols');
-  const cols = colsRaw ? colsRaw.split(',').map(c => c.trim()).filter(Boolean) : undefined;
+  const cols = colsRaw
+    ? colsRaw
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : undefined;
 
   if (format && format !== 'csv' && format !== 'txt') {
     console.error('Error: --format debe ser "csv" o "txt"');
@@ -106,7 +111,7 @@ if (!activeOpFlag) {
     cols,
   };
 
-  await runNonInteractive(runnerOpts).catch(err => {
+  await runNonInteractive(runnerOpts).catch((err) => {
     console.error(err);
     process.exit(1);
   });

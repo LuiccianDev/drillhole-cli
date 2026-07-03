@@ -11,7 +11,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 export async function printBanner(): Promise<void> {
   const word = 'DRILLHOLE';
-  
+
   // Añade espacio inicial para el terminal
   console.log('\n');
 
@@ -27,12 +27,12 @@ export async function printBanner(): Promise<void> {
           font: 'ANSI Shadow',
           horizontalLayout: 'full', // 'full' ayuda a mantener la posición inicial fija a la izquierda
         },
-        (err, data) => resolve(data || '')
+        (err, data) => resolve(data || ''),
       );
     });
 
     const lines = text.split('\n');
-    
+
     // Si no es la primera iteración, subimos el cursor para sobreescribir el frame anterior
     if (i > 1) {
       process.stdout.write(`\x1b[${lines.length}A`);
@@ -48,7 +48,7 @@ export async function printBanner(): Promise<void> {
   }
 
   // Al terminar la palabra, mostramos el resto de la info
-  console.log('\x1b[2m%s\x1b[0m', ' Vulcan Data Assistant | v1.0.0-ts');
-  
+  console.log('\x1b[2m%s\x1b[0m', ' Vulcan Data Assistant | v1.0.1-ts');
+
   await sleep(400); // Pausa final para suavidad
 }

@@ -11,12 +11,15 @@ export interface Range {
 /**
  * Mapped type for Assay results, ensuring every key maps to a consistent statistical object.
  */
-export type AssayResult = Record<string, {
-  raw_min: number;
-  raw_max: number;
-  count: number;
-  ranges: Range[];
-}>;
+export type AssayResult = Record<
+  string,
+  {
+    raw_min: number;
+    raw_max: number;
+    count: number;
+    ranges: Range[];
+  }
+>;
 
 export interface AssayOptions {
   classes?: string | number;

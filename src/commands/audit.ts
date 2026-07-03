@@ -3,7 +3,7 @@ import type { AuditResult, ColumnAudit, AuditOptions } from '../types/index.js';
 
 export async function runAudit(file: string, opts: AuditOptions = {}): Promise<AuditResult> {
   const { headers, rows } = await parseFile(file, opts.baseDir);
-  
+
   const stats = {
     total_rows: rows.length,
     columns: headers.length,
@@ -11,11 +11,11 @@ export async function runAudit(file: string, opts: AuditOptions = {}): Promise<A
     numeric_cols: 0,
   };
 
-  const colInfo: ColumnAudit[] = headers.map(h => {
+  const colInfo: ColumnAudit[] = headers.map((h) => {
     let nullCount = 0;
     let isNumeric = true;
-    
-    rows.forEach(r => {
+
+    rows.forEach((r) => {
       if (!r[h]) nullCount++;
       if (r[h] && isNaN(Number(r[h]))) isNumeric = false;
     });

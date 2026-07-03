@@ -23,8 +23,8 @@ async function getFileMeta(filepath: string): Promise<{ headers: string[]; delim
   }
 
   const delim: Delimiter = firstLine.includes('\t') ? '\t' : ',';
-  const headers = firstLine.split(delim).map(h => h.trim());
-  
+  const headers = firstLine.split(delim).map((h) => h.trim());
+
   return { headers, delim };
 }
 
@@ -55,7 +55,7 @@ export function validateSafePath(filepath: string, baseDir?: string): string {
  */
 export async function parseFile<T extends Record<string, string> = Record<string, string>>(
   filepath: string,
-  baseDir?: string
+  baseDir?: string,
 ): Promise<ParseResult<T>> {
   const safePath = validateSafePath(filepath, baseDir);
   if (!fs.existsSync(safePath)) {
@@ -99,10 +99,10 @@ export async function parseFile<T extends Record<string, string> = Record<string
  * Supports targetColumns to perform lazy/selective column parsing.
  */
 export async function parseColumns<T extends Record<string, string> = Record<string, string>>(
-  filepath: string, 
+  filepath: string,
   maxRows = 0,
   targetColumns?: (keyof T & string)[],
-  baseDir?: string
+  baseDir?: string,
 ): Promise<ColumnResult<T>> {
   const safePath = validateSafePath(filepath, baseDir);
   if (!fs.existsSync(safePath)) {
@@ -110,11 +110,12 @@ export async function parseColumns<T extends Record<string, string> = Record<str
   }
 
   const { headers, delim } = await getFileMeta(safePath);
-  
+
   // Si targetColumns está definido, solo guardamos en memoria esas columnas
-  const selectedHeaders = targetColumns && targetColumns.length > 0 
-    ? headers.filter(h => targetColumns.includes(h as keyof T & string))
-    : headers;
+  const selectedHeaders =
+    targetColumns && targetColumns.length > 0
+      ? headers.filter((h) => targetColumns.includes(h as keyof T & string))
+      : headers;
 
   const columns = {} as Record<keyof T & string, string[]>;
   for (const h of selectedHeaders) {
@@ -157,13 +158,14 @@ export function getFilesInDir(dir?: string): string[] {
   const allowed = ['.txt', '.csv'];
   const resolvedDir = path.resolve(dir ?? process.cwd());
   const base = path.resolve(process.cwd());
-  
+
   // Prevenir path traversal fuera del directorio de trabajo
   if (!resolvedDir.startsWith(base)) {
     throw new Error(`Acceso denegado: El directorio debe estar dentro de ${base}.`);
   }
 
-  return fs.readdirSync(resolvedDir)
+  return fs
+    .readdirSync(resolvedDir)
     .filter((f: string) => allowed.includes(path.extname(f).toLowerCase()))
     .sort();
 }

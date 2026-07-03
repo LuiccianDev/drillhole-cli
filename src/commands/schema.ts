@@ -4,8 +4,8 @@ import type { SchemaResult, VulcanDataType, SchemaOptions } from '../types/index
 export async function runSchema(file: string, opts: SchemaOptions = {}): Promise<SchemaResult> {
   // Solo necesitamos una muestra para inferir tipos, pero por seguridad analizamos más
   const { headers, columns } = await parseColumns(file, 500, undefined, opts.baseDir);
-  
-  const schema: SchemaResult = headers.map(h => {
+
+  const schema: SchemaResult = headers.map((h) => {
     const vals = (columns[h] ?? []).filter(Boolean);
     if (!vals.length) return { column: h, type: 'text (empty)', maxLength: 0 };
 
