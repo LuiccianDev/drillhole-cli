@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 
-export function exportData(data: any, name: string, format: 'txt' | 'csv' = 'txt'): string | string[] {
+export function exportData(data: any, name: string, format: 'txt' | 'csv' = 'txt', outdir?: string): string | string[] {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const dir = path.join(process.cwd(), 'exports');
+  const dir = path.resolve(outdir ?? path.join(process.cwd(), 'exports'));
   
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);

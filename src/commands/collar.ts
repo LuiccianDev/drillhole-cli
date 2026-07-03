@@ -32,7 +32,7 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
     ...map.LENGTH
   ];
   
-  const { columns, headers } = await parseColumns(file, 0, targetCols);
+  const { columns, headers } = await parseColumns(file, 0, targetCols, opts.baseDir);
   const buffer = typeof opts.buffer === 'string' ? parseFloat(opts.buffer) : (opts.buffer ?? 0);
 
   const findCol = (keys: readonly string[]) => keys.find(k => headers.includes(k));

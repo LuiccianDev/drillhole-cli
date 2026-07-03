@@ -31,18 +31,19 @@ async function getFileMeta(filepath: string): Promise<{ headers: string[]; delim
 /**
  * Validates and resolves the filepath to prevent path traversal
  * and ensure it is a .csv or .txt file.
+ * @param baseDir Directorio raíz permitido. Si no se provee, usa process.cwd().
  */
-export function validateSafePath(filepath: string): string {
+export function validateSafePath(filepath: string, baseDir?: string): string {
+  const root = path.resolve(baseDir ?? process.cwd());
   const resolved = path.resolve(filepath);
   const ext = path.extname(resolved).toLowerCase();
   if (ext !== '.csv' && ext !== '.txt') {
     throw new Error('Solo se permiten archivos con extensión .csv o .txt');
   }
 
-  // Prevenir path traversal fuera del directorio de trabajo actual
-  const cwd = path.resolve(process.cwd());
-  if (!resolved.startsWith(cwd)) {
-    throw new Error('Acceso denegado: El archivo debe estar dentro del directorio de trabajo actual.');
+  // Prevenir path traversal fuera del directorio base
+  if (!resolved.startsWith(root)) {
+    throw new Error(`Acceso denegado: El archivo debe estar dentro del directorio base (${root}).`);
   }
 
   return resolved;
@@ -53,9 +54,10 @@ export function validateSafePath(filepath: string): string {
  * Optimized with streams and proper cleanup to avoid leaks.
  */
 export async function parseFile<T extends Record<string, string> = Record<string, string>>(
-  filepath: string
+  filepath: string,
+  baseDir?: string
 ): Promise<ParseResult<T>> {
-  const safePath = validateSafePath(filepath);
+  const safePath = validateSafePath(filepath, baseDir);
   if (!fs.existsSync(safePath)) {
     throw new Error(`Archivo no encontrado: ${filepath}`);
   }
@@ -99,9 +101,10 @@ export async function parseFile<T extends Record<string, string> = Record<string
 export async function parseColumns<T extends Record<string, string> = Record<string, string>>(
   filepath: string, 
   maxRows = 0,
-  targetColumns?: (keyof T & string)[]
+  targetColumns?: (keyof T & string)[],
+  baseDir?: string
 ): Promise<ColumnResult<T>> {
-  const safePath = validateSafePath(filepath);
+  const safePath = validateSafePath(filepath, baseDir);
   if (!fs.existsSync(safePath)) {
     throw new Error(`Archivo no encontrado: ${filepath}`);
   }
@@ -150,14 +153,14 @@ export async function parseColumns<T extends Record<string, string> = Record<str
   return { headers: headers as (keyof T & string)[], columns, delim };
 }
 
-export function getFilesInDir(dir = process.cwd()): string[] {
+export function getFilesInDir(dir?: string): string[] {
   const allowed = ['.txt', '.csv'];
-  const resolvedDir = path.resolve(dir);
+  const resolvedDir = path.resolve(dir ?? process.cwd());
+  const base = path.resolve(process.cwd());
   
-  // Prevenir listado de directorios fuera del directorio de trabajo
-  const cwd = path.resolve(process.cwd());
-  if (!resolvedDir.startsWith(cwd)) {
-    throw new Error('Acceso denegado: El directorio debe estar dentro del de trabajo actual.');
+  // Prevenir path traversal fuera del directorio de trabajo
+  if (!resolvedDir.startsWith(base)) {
+    throw new Error(`Acceso denegado: El directorio debe estar dentro de ${base}.`);
   }
 
   return fs.readdirSync(resolvedDir)

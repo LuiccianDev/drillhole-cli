@@ -1,7 +1,31 @@
 {
   "name": "drill-cli",
   "version": "1.0.0",
+  "description": "CLI tool for processing drillhole data (.csv/.txt) and generating Vulcan-ready reports for the mining industry",
   "type": "module",
+  "author": "LuiccianDev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuiccianDev/drillhole-cli.git"
+  },
+  "homepage": "https://github.com/LuiccianDev/drillhole-cli#readme",
+  "bugs": {
+    "url": "https://github.com/LuiccianDev/drillhole-cli/issues"
+  },
+  "keywords": [
+    "drillhole",
+    "mining",
+    "vulcan",
+    "geology",
+    "drilling",
+    "assay",
+    "lithology",
+    "collar",
+    "cli",
+    "csv",
+    "maptek"
+  ],
   "scripts": {
     "drill": "tsx src/index.ts",
     "build": "tsc",
@@ -11,11 +35,11 @@
     "@clack/prompts": "^0.7.0",
     "figlet": "^1.11.0"
   },
-  "packageManager": "pnpm@11.6.0+sha512.9a36518224080c6fe5165afdcfe79bfa118c29be703f3f462b1e32efe1e98e47e8750b148e08286250aad4113cc7993ca413c4e2cd447752708c2ee5751bc95f",
   "devDependencies": {
     "@types/figlet": "^1.7.0",
     "@types/node": "^25.9.3",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
-  }
+  },
+  "packageManager": "pnpm@11.6.0+sha512.9a36518224080c6fe5165afdcfe79bfa118c29be703f3f462b1e32efe1e98e47e8750b148e08286250aad4113cc7993ca413c4e2cd447752708c2ee5751bc95f"
 }

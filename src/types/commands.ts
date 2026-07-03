@@ -22,6 +22,7 @@ export interface AssayOptions {
   classes?: string | number;
   cols?: string[];
   output?: string;
+  baseDir?: string;
 }
 
 export interface LimitResult {
@@ -55,6 +56,7 @@ export interface CollarOptions {
   buffer?: string | number;
   externalMaxLen?: string | number;
   output?: string;
+  baseDir?: string;
 }
 
 export interface ColumnAudit {
@@ -76,6 +78,33 @@ export interface AuditResult {
 export interface LithoOptions {
   cols?: string[];
   output?: string;
+  baseDir?: string;
+}
+
+export interface AuditOptions {
+  output?: string;
+  baseDir?: string;
+}
+
+export interface SchemaOptions {
+  output?: string;
+  baseDir?: string;
+}
+
+export interface RunnerOptions {
+  dir: string;
+  file: string;
+  operation: 'audit' | 'collar' | 'assay' | 'litho' | 'schema';
+  noBanner: boolean;
+  format?: 'csv' | 'txt';
+  outdir?: string;
+  buffer?: string;
+  classes?: string;
+  cols?: string[];
+}
+
+export interface CliGlobalOptions {
+  noBanner?: boolean;
 }
 
 export type LithoResult = Record<string, string[]>;

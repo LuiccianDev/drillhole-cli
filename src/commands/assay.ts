@@ -24,7 +24,7 @@ function calcRanges(vals: number[], n: number): Range[] {
 
 export async function runAssay(file: string, opts: AssayOptions = {}): Promise<AssayResult> {
   const targetCols = opts.cols && opts.cols.length > 0 ? opts.cols : undefined;
-  const { headers, columns } = await parseColumns(file, 0, targetCols);
+  const { headers, columns } = await parseColumns(file, 0, targetCols, opts.baseDir);
   const nClases = typeof opts.classes === 'string' ? parseInt(opts.classes) : (opts.classes ?? 6);
   const numCols = targetCols || headers.filter(h => !SKIP.includes(h));
   const result: AssayResult = {};

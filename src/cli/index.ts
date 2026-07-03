@@ -7,7 +7,7 @@ import lithoCmd from '../commands/litho.js';
 import schemaCmd from '../commands/schema.js';
 import auditCmd from '../commands/audit.js';
 
-import type { AssayOptions, CollarOptions, LithoOptions } from '../types/index.js';
+import type { AssayOptions, CollarOptions, LithoOptions, CliGlobalOptions } from '../types/index.js';
 
 type Operation = 'audit' | 'collar' | 'assay' | 'litho' | 'schema';
 
@@ -21,8 +21,10 @@ function checkCancel<T>(val: T | symbol): T {
   return val as T;
 }
 
-export async function runCli(baseDir: string) {
-  await printBanner();
+export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {}) {
+  if (!globalOpts.noBanner) {
+    await printBanner();
+  }
 
   // 1. Detecta archivos en la carpeta indicada
   const files = getFilesInDir(baseDir);
@@ -59,11 +61,13 @@ export async function runCli(baseDir: string) {
       options: [
         { value: 'txt', label: 'TXT — bloque de notas' },
         { value: 'csv', label: 'CSV — Excel / Vulcan' },
+        { value: 'none', label: 'No exportar — solo mostrar en pantalla' },
       ]
     })) as string;
+    if (output === 'none') output = undefined;
   }
 
-  const opts: CliOptions = { output };
+  const opts: CliOptions = { output, baseDir };
 
   // 5. Opciones según operación
   if (operation === 'collar') {
