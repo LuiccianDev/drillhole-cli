@@ -1,6 +1,6 @@
 {
   "name": "@luicciandev/drillhole-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CLI tool for processing drillhole data (.csv/.txt) and generating Vulcan-ready reports for the mining industry",
   "type": "module",
   "author": "LuiccianDev",
