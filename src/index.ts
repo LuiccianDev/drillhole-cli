@@ -37,7 +37,7 @@ if (args.includes('--help') || args.includes('-h')) {
 if (args.includes('--version') || args.includes('-v')) {
   const { readFileSync } = await import('fs');
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
-  console.log(`drill-cli v${pkg.version}`);
+  console.log(`${pkg.name} v${pkg.version}`);
   process.exit(0);
 }
 
