@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { runCli } from './cli/index.js';
 import { runNonInteractive } from './runner.js';
 import type { RunnerOptions } from './types/index.js';

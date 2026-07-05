@@ -89,7 +89,7 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
       await text({
         message: 'Valor fijo de buffer (0 = sin buffer):',
         defaultValue: '0',
-        validate: (v) => (isNaN(parseFloat(v)) ? 'Ingresa un número' : undefined),
+        validate: (v) => (v === undefined || isNaN(parseFloat(v)) ? 'Ingresa un número' : undefined),
       }),
     ) as string;
     opts.buffer = buf;
@@ -149,7 +149,7 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
       await text({
         message: 'Número de clases para rangos (ej: 6, 7):',
         defaultValue: '6',
-        validate: (v) => (isNaN(parseInt(v)) || parseInt(v) < 2 ? 'Mínimo 2' : undefined),
+        validate: (v) => (v === undefined || isNaN(parseInt(v)) || parseInt(v) < 2 ? 'Mínimo 2' : undefined),
       }),
     ) as string;
     opts.cols = selectedCols;

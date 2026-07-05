@@ -13,6 +13,17 @@
   "bugs": {
     "url": "https://github.com/LuiccianDev/drillhole-cli/issues"
   },
+  "bin": {
+    "drill": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "drillhole",
     "mining",
@@ -30,6 +41,8 @@
     "drill": "tsx src/index.ts",
     "build": "tsc",
     "test": "tsx tests/run.ts",
+    "prepublishOnly": "pnpm build",
+    "prepack": "pnpm build",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --check src/",
