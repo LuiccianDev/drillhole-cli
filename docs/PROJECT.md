@@ -1,8 +1,8 @@
 # Project Overview
 
-## What is drill-cli?
+## What is drillhole-cli?
 
-`drill-cli` is a specialized command-line tool for geologists and data technicians working with drillhole data. It processes `.csv` and `.txt` files containing mineral exploration drilling data and generates reports formatted for **Vulcan** — a 3D mining modeling and scheduling software by Maptek.
+`@luicciandev/drillhole-cli` (invoked as `drill`) is a specialized command-line tool for geologists and data technicians working with drillhole data. It processes `.csv` and `.txt` files containing mineral exploration drilling data and generates reports formatted for **Vulcan** — a 3D mining modeling and scheduling software by Maptek.
 
 The tool automates five common mining-data tasks: data quality auditing, spatial boundary calculation, grade distribution analysis, lithology code extraction, and data type inference.
 
@@ -16,7 +16,7 @@ The tool automates five common mining-data tasks: data quality auditing, spatial
 | Data technician | Preparing block model limits | Calculate rounded collar boundaries with buffer for mine planning |
 | Exploration manager | Reviewing grade distribution across a deposit | Generate percentile-based assay ranges for resource estimation |
 | Modeler | Building a lithological model | Extract unique rock codes for legend definition |
-| AI agent | Automating data processing | Invoke drill-cli non-interactively as part of a pipeline |
+| AI agent | Automating data processing | Invoke `drill` non-interactively as part of a pipeline |
 
 ---
 
@@ -76,7 +76,7 @@ Detects Vulcan-compatible data types:
 ### Interactive (human)
 
 ```bash
-pnpm drill --dir ./data
+drill --dir ./data
 ```
 
 Shows an animated ASCII banner, then guides through operation selection, file selection, and option configuration via `@clack/prompts` menus.
@@ -84,10 +84,8 @@ Shows an animated ASCII banner, then guides through operation selection, file se
 ### Non-interactive (AI / automation)
 
 ```bash
-pnpm drill --dir ./data --no-banner --collar --file collar.csv --buffer 50 --format csv
+drill --dir ./data --no-banner --collar --file collar.csv --buffer 50 --format csv
 ```
-
-Pass all options via command-line flags. Deterministic, no prompts, no animation. Designed for AI agents and CI pipelines.
 
 ---
 
@@ -107,6 +105,8 @@ See `SECURITY.md` for details.
 
 ```
 drillhole-cli/
+├── bin/                      # Entrypoint for published CLI
+│   └── drill.js              # Bin wrapper (shebang + import dist/)
 ├── src/
 │   ├── index.ts              # Router: interactive vs non-interactive
 │   ├── runner.ts             # Non-interactive orchestrator
@@ -130,19 +130,21 @@ drillhole-cli/
 │       ├── index.ts          # Re-exports
 │       ├── parser.ts         # ParseResult, ColumnResult, Delimiter
 │       └── commands.ts       # All command option/result types
+├── dist/                     # Compiled JavaScript (from tsc)
 ├── tests/
 │   └── run.ts                # Custom test runner (32 tests)
 ├── data_tests/               # Sample drillhole files
 ├── docs/
 │   ├── ARCHITECTURE.md       # Layer architecture & data flow
-│   ├── SECURITY.md           # Security model & defenses
 │   ├── PROJECT.md            # This file
-│   └── src-reference.md      # Original technical reference
+│   ├── SECURITY.md           # Security model & defenses
+│   └── TECHNICAL-REFERENCE.md # Technical reference
 ├── .agents/
 │   └── skills/               # AI agent skills
 ├── AGENTS.md                 # AI agent context
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── pnpm-lock.yaml
 ```
 
 ---
@@ -151,9 +153,11 @@ drillhole-cli/
 
 ```bash
 pnpm install    # Install dependencies
-pnpm drill      # Run interactively
+pnpm drill      # Run interactively (dev mode with tsx)
+pnpm build      # Compile TypeScript to dist/
 pnpm test       # Run test suite (32 tests)
 ```
+
 
 ### Adding a new command
 

@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-`drill-cli` is a Node.js command-line tool for processing drillhole data. It supports two execution modes:
+`@luicciandev/drillhole-cli` is a Node.js command-line tool for processing drillhole data. It supports two execution modes:
 
 | Mode | Trigger | Use case |
 |---|---|---|
@@ -16,35 +16,43 @@ Both modes share the same command implementations (`src/commands/*.ts`) and the 
 ## 2. Layer Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   src/index.ts                       │
-│                   (Router)                           │
-│                                                      │
-│   ┌─ ¿Operation flag? ──SÍ──→ src/runner.ts         │
-│   │                          (Non-interactive)       │
-│   │                                                 │
-│   └─ ¿Operation flag? ──NO──→ src/cli/index.ts      │
-│                                (Interactive)         │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    bin/drill.js                              │
+│                 (Entrypoint: shebang + import)               │
+│                        │                                     │
+│                        ▼                                     │
+│                   dist/index.js                              │
+│                   (Compiled Router)                          │
+│                                                              │
+│   ┌─ ¿Operation flag? ──SÍ──→ dist/runner.js                │
+│   │                          (Non-interactive)               │
+│   │                                                          │
+│   └─ ¿Operation flag? ──NO──→ dist/cli/index.js             │
+│                                (Interactive)                 │
+└─────────────────────────────────────────────────────────────┘
                             │
                             ▼
               ┌─────────────────────────────┐
-              │      src/commands/*.ts       │
-              │  (collar, assay, litho,      │
-              │   audit, schema)             │
+              │   dist/commands/*.js        │
+              │  (collar, assay, litho,     │
+              │   audit, schema)            │
               └──────────┬──────────────────┘
-                         │
-                         ▼
+                        │
+                        ▼
               ┌─────────────────────────────┐
-              │      src/core/parser.ts     │
+              │    dist/core/parser.js      │
               │   (parseFile, parseColumns)  │
               └──────────┬──────────────────┘
-                         │
-                         ▼
+                        │
+                        ▼
               ┌─────────────────────────────┐
               │     File System (.csv/.txt)  │
               └─────────────────────────────┘
 ```
+
+**Two entry paths:**
+- **Published CLI**: `bin/drill.js` (shebang) → `dist/index.js` (compiled from `src/`)
+- **Local development**: `src/index.ts` directly via `tsx` (`pnpm drill`)
 
 ### Layer responsibilities
 
@@ -66,11 +74,11 @@ Both modes share the same command implementations (`src/commands/*.ts`) and the 
 ### 3.1 Interactive mode
 
 ```
-User runs: pnpm drill --dir ./data
+User runs: drill (or pnpm drill for local dev)
 
 src/index.ts
   ├── No operation flag detected → interactive mode
-  └── runCli("./data", { noBanner: false })
+  └── runCli(baseDir, { noBanner: false })
       ├── printBanner()  ← animated banner
       ├── getFilesInDir("./data")  ← list .csv/.txt
       ├── @clack/prompts: select operation, file, options
@@ -85,7 +93,8 @@ src/index.ts
 ### 3.2 Non-interactive mode
 
 ```
-User runs: pnpm drill --dir ./data --collar --file collar.csv --buffer 50
+User runs: drill --dir ./data --collar --file collar.csv --buffer 50
+(or: pnpm drill --dir ./data --collar --file collar.csv --buffer 50 for local dev)
 
 src/index.ts
   ├── "--collar" detected → non-interactive mode
@@ -119,6 +128,17 @@ This ensures path validation always checks against the user-provided `--dir`, no
 ---
 
 ## 4. Module Reference
+
+### `bin/drill.js` — Published Entrypoint
+
+A lightweight wrapper that provides the shebang for Node.js and imports the compiled router:
+
+```typescript
+#!/usr/bin/env node
+import('../dist/index.js');
+```
+
+This is what npm registers as the `drill` command via `"bin": "./bin/drill.js"` in `package.json`.
 
 ### `src/index.ts` — Router
 

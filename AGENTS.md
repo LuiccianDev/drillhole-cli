@@ -99,4 +99,4 @@ pnpm drill --version
 - Only one operation flag can be active per invocation.
 
 ---
-*Reference GEMINI.md for team-specific workflows and docs/src-reference.md for detailed API documentation.*
+*Reference GEMINI.md for team-specific workflows and docs/TECHNICAL-REFERENCE.md for detailed API documentation.*

@@ -2,7 +2,7 @@
 
 ## 1. Threat Model
 
-The primary security concern for `drill-cli` is **unauthorized file access via path traversal**. Since the tool reads files from a user-specified directory and can be invoked by AI agents or scripts, an attacker could craft a `--file` argument containing `../` sequences to read files outside the intended directory.
+The primary security concern for `@luicciandev/drillhole-cli` is **unauthorized file access via path traversal**. Since the tool reads files from a user-specified directory and can be invoked by AI agents or scripts, an attacker could craft a `--file` argument containing `../` sequences to read files outside the intended directory.
 
 Secondary concerns:
 - **File type confusion**: loading non-CSV/TXT files that may contain sensitive data
@@ -40,7 +40,7 @@ export function validateSafePath(filepath: string, baseDir?: string): string {
 **Example:**
 
 ```bash
-pnpm drill --dir /data/project-x --no-banner --audit --file ../etc/passwd
+drill --dir /data/project-x --no-banner --audit --file ../etc/passwd
 # => Error: Acceso denegado
 ```
 
