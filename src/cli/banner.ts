@@ -48,7 +48,7 @@ export async function printBanner(): Promise<void> {
   }
 
   // Al terminar la palabra, mostramos el resto de la info
-  console.log('\x1b[2m%s\x1b[0m', ' Vulcan Data Assistant | v1.0.1-ts');
+  console.log('\x1b[2m%s\x1b[0m', ' Vulcan Data Assistant | v1.0.2-ts');
 
   await sleep(400); // Pausa final para suavidad
 }
