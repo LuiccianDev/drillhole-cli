@@ -69,7 +69,7 @@ export default async function assayCmd(file: string, opts: AssayOptions) {
   const result = await runAssay(file, opts);
   printAssay(result);
   if (opts.output) {
-    const f = exportData(result, 'assay_limits', opts.output as any);
+    const f = exportData(result, 'assay_limits', opts.output as 'csv' | 'txt');
     const files = Array.isArray(f) ? f : [f];
     console.log(`\nExportado:`);
     files.forEach((file) => console.log(`  - ${file}`));

@@ -81,7 +81,7 @@ export async function parseFile<T extends Record<string, string> = Record<string
       const row = {} as T;
       for (let i = 0; i < headers.length; i++) {
         const h = headers[i];
-        if (h) (row as any)[h] = vals[i]?.trim() ?? '';
+        if (h) (row as Record<string, string>)[h] = vals[i]?.trim() ?? '';
       }
       rows.push(row);
     }

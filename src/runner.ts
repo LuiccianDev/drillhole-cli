@@ -7,7 +7,17 @@ import { runLitho, printLitho } from './commands/litho.js';
 import { runAudit, printAudit } from './commands/audit.js';
 import { runSchema, printSchema } from './commands/schema.js';
 import { exportData } from './commands/export.js';
+import type { ExportData } from './commands/export.js';
 import type { RunnerOptions } from './types/index.js';
+import type {
+  AuditResult,
+  CollarResult,
+  AssayResult,
+  LithoResult,
+  SchemaResult,
+} from './types/commands.js';
+
+type CommandResult = AuditResult | CollarResult | AssayResult | LithoResult | SchemaResult;
 
 const OP_LABELS: Record<string, string> = {
   audit: 'audit_report',
@@ -47,7 +57,7 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
   const baseOpts = { baseDir: resolvedDir, output: format };
 
   // Construir opciones específicas según operación
-  let result: any;
+  let result: CommandResult | undefined;
   switch (operation) {
     case 'audit':
       result = await runAudit(filePath, { ...baseOpts });
@@ -85,7 +95,7 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
   // Exportar si se especificó formato
   if (format && result && operation !== 'audit' && operation !== 'schema') {
     const label = OP_LABELS[operation] ?? operation;
-    const f = exportData(result, label, format, outdir);
+    const f = exportData(result as ExportData, label, format, outdir);
     const files = Array.isArray(f) ? f : [f];
     console.log(`\nExportado:`);
     for (const file of files) {

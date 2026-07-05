@@ -33,7 +33,7 @@ export default async function lithoCmd(file: string, opts: LithoOptions) {
   const result = await runLitho(file, opts);
   printLitho(result);
   if (opts.output) {
-    const f = exportData(result, 'litho_values', opts.output as any);
+    const f = exportData(result, 'litho_values', opts.output as 'csv' | 'txt');
     console.log(`\nExportado: ${f}`);
   }
   return result;

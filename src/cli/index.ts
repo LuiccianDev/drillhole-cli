@@ -89,7 +89,8 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
       await text({
         message: 'Valor fijo de buffer (0 = sin buffer):',
         defaultValue: '0',
-        validate: (v) => (v === undefined || isNaN(parseFloat(v)) ? 'Ingresa un número' : undefined),
+        validate: (v) =>
+          v === undefined || isNaN(parseFloat(v)) ? 'Ingresa un número' : undefined,
       }),
     ) as string;
     opts.buffer = buf;
@@ -149,7 +150,8 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
       await text({
         message: 'Número de clases para rangos (ej: 6, 7):',
         defaultValue: '6',
-        validate: (v) => (v === undefined || isNaN(parseInt(v)) || parseInt(v) < 2 ? 'Mínimo 2' : undefined),
+        validate: (v) =>
+          v === undefined || isNaN(parseInt(v)) || parseInt(v) < 2 ? 'Mínimo 2' : undefined,
       }),
     ) as string;
     opts.cols = selectedCols;
@@ -185,9 +187,10 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
     else if (operation === 'schema') await schemaCmd(filePath, opts);
     s.stop('Listo.');
     await new Promise((resolve) => setTimeout(resolve, 300));
-  } catch (err: any) {
+  } catch (err: unknown) {
     s.stop('Error.');
-    console.error(`\n${err.message}`);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`\n${message}`);
     process.exit(1);
   }
 

@@ -1,8 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import type { AssayResult, CollarResult, LithoResult, Range } from '../types/commands.js';
+
+type ExportData = CollarResult | AssayResult | LithoResult;
+
+export type { ExportData };
 
 export function exportData(
-  data: any,
+  data: ExportData,
   name: string,
   format: 'txt' | 'csv' = 'txt',
   outdir?: string,
@@ -15,15 +20,15 @@ export function exportData(
   }
 
   if (name === 'assay_limits' && format === 'csv') {
-    // Assay exporta un CSV por cada columna
     const files: string[] = [];
-    for (const [col, v] of Object.entries(data as any)) {
+    const assayData = data as AssayResult;
+    for (const [col, v] of Object.entries(assayData)) {
       const filename = `${name}_${col}_${timestamp}.csv`;
       const filepath = path.join(dir, filename);
       const content = [
         'Clase,From,To,Percentil_From,Percentil_To',
-        ...(v as any).ranges.map(
-          (r: any) => `${r.clase},${r.from},${r.to},${r.percentil_from},${r.percentil_to}`,
+        ...v.ranges.map(
+          (r: Range) => `${r.clase},${r.from},${r.to},${r.percentil_from},${r.percentil_to}`,
         ),
       ].join('\n');
       fs.writeFileSync(filepath, content);
@@ -38,20 +43,21 @@ export function exportData(
   let content = '';
   if (format === 'csv') {
     if (name === 'collar_limits') {
+      const collarData = data as CollarResult;
       content = [
         'Coordenada,Raw_Min,Raw_Max,Min_Boundary,Max_Boundary',
-        `EASTING,${(data as any).EASTING.raw_min},${(data as any).EASTING.raw_max},${(data as any).EASTING.min_boundary},${(data as any).EASTING.max_boundary}`,
-        `NORTHING,${(data as any).NORTHING.raw_min},${(data as any).NORTHING.raw_max},${(data as any).NORTHING.min_boundary},${(data as any).NORTHING.max_boundary}`,
-        `ELEVATION,${(data as any).ELEVATION.raw_min},${(data as any).ELEVATION.raw_max},${(data as any).ELEVATION.min_boundary},${(data as any).ELEVATION.max_boundary}`,
+        `EASTING,${collarData.EASTING.raw_min},${collarData.EASTING.raw_max},${collarData.EASTING.min_boundary},${collarData.EASTING.max_boundary}`,
+        `NORTHING,${collarData.NORTHING.raw_min},${collarData.NORTHING.raw_max},${collarData.NORTHING.min_boundary},${collarData.NORTHING.max_boundary}`,
+        `ELEVATION,${collarData.ELEVATION.raw_min},${collarData.ELEVATION.raw_max},${collarData.ELEVATION.min_boundary},${collarData.ELEVATION.max_boundary}`,
       ].join('\n');
     } else if (name === 'litho_values') {
+      const lithoData = data as LithoResult;
       content = 'Columna,Valor\n';
-      for (const [col, vals] of Object.entries(data as any)) {
-        content += (vals as string[]).map((v) => `${col},${v}`).join('\n') + '\n';
+      for (const [col, vals] of Object.entries(lithoData)) {
+        content += vals.map((v) => `${col},${v}`).join('\n') + '\n';
       }
     }
   } else {
-    // TXT format (pretty print)
     content = JSON.stringify(data, null, 2);
   }
 

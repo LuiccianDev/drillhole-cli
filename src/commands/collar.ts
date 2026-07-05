@@ -139,7 +139,7 @@ export default async function collarCmd(file: string, opts: CollarOptions) {
   const result = await runCollar(file, opts);
   printCollar(result);
   if (opts.output) {
-    const f = exportData(result, 'collar_limits', opts.output as any);
+    const f = exportData(result, 'collar_limits', opts.output as 'csv' | 'txt');
     console.log(`\nExportado: ${f}`);
   }
   return result;
