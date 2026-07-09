@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/img/logo-drillhole-cli.webp" alt="Drillhole CLI Logo" />
+
 # DRILLHOLE CLI
 
 **Professional mining data assistant for Vulcan software**
