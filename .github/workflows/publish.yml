@@ -1,0 +1,46 @@
+name: Publish package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.6.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify package version
+        run: |
+          test "$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME#v}"
+
+      - name: Validate package
+        run: |
+          pnpm test
+          pnpm exec tsc --noEmit
+          pnpm build
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
