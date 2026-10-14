@@ -62,9 +62,13 @@ const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
   console.log('Uso: drill [comando] [ruta/archivo] [opciones]\n');
   console.log('Comandos:');
-  console.log('  audit [archivo]       Validar integridad geológica (solapamientos, gaps, coordenadas)');
+  console.log(
+    '  audit [archivo]       Validar integridad geológica (solapamientos, gaps, coordenadas)',
+  );
   console.log('  collar [archivo]      Calcular límites espaciales y marco Vulcan BDF');
-  console.log('  assay [archivo]       Estadísticas descriptivas (μ, σ, CV) y rangos por percentil');
+  console.log(
+    '  assay [archivo]       Estadísticas descriptivas (μ, σ, CV) y rangos por percentil',
+  );
   console.log('  litho [archivo]       Leyenda litológica con frecuencias y porcentajes');
   console.log('  schema [archivo]      Inferir tipos de datos para bases de datos Vulcan\n');
   console.log('Opciones:');
@@ -111,7 +115,20 @@ const hasFlag = (flags: string[]): boolean => flags.some((f) => args.includes(f)
 const noBanner = hasFlag(['--no-banner', '-q']);
 
 // Extraer flags conocidos para identificar argumentos posicionales libres
-const flagsWithValues = ['--dir', '-d', '--file', '--format', '-f', '--buffer', '-b', '--classes', '-c', '--outdir', '-o', '--cols'];
+const flagsWithValues = [
+  '--dir',
+  '-d',
+  '--file',
+  '--format',
+  '-f',
+  '--buffer',
+  '-b',
+  '--classes',
+  '-c',
+  '--outdir',
+  '-o',
+  '--cols',
+];
 const flagValueIndices = new Set<number>();
 
 for (let i = 0; i < args.length; i++) {
@@ -144,7 +161,9 @@ if (positionalArgs.length > 0) {
     // Si no es operación válida y no hay flags de operación, verificar si es typo
     const suggestion = suggestCommand(firstPos, VALID_OPERATIONS);
     if (suggestion) {
-      console.error(`Error: Comando desconocido '${positionalArgs[0]}'. ¿Quisiste decir '${suggestion}'?`);
+      console.error(
+        `Error: Comando desconocido '${positionalArgs[0]}'. ¿Quisiste decir '${suggestion}'?`,
+      );
       console.log('Ejecuta "drill --help" para ver la lista de comandos disponibles.');
       process.exit(1);
     }

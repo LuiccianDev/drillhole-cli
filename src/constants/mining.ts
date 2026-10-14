@@ -30,4 +30,3 @@ export const MINING_SENTINELS = [
   '.',
   '*',
 ] as const;
-

@@ -11,7 +11,18 @@ export async function runLitho(file: string, opts: LithoOptions = {}): Promise<L
       : headers.filter((h) => LITHO_KEYWORDS.some((k) => h.toUpperCase().includes(k)));
 
   if (!targetCols.length) {
-    const nonInterval = ['HOLE_ID', 'HOLEID', 'BHID', 'FROM', 'TO', 'LENGTH', 'X', 'Y', 'Z', 'DEPTH'];
+    const nonInterval = [
+      'HOLE_ID',
+      'HOLEID',
+      'BHID',
+      'FROM',
+      'TO',
+      'LENGTH',
+      'X',
+      'Y',
+      'Z',
+      'DEPTH',
+    ];
     targetCols = headers.filter((h) => !nonInterval.includes(h.toUpperCase()));
   }
 
@@ -56,7 +67,9 @@ export function printLitho(result: LithoResult) {
 
     console.log(`\nColumna: ${col} (${vals.length} códigos únicos):`);
     if (colDetails.length > 0) {
-      console.log(`  ${'Código'.padEnd(16)} ${'Frecuencia (Tramos)'.padStart(20)} ${'% del Total'.padStart(14)}`);
+      console.log(
+        `  ${'Código'.padEnd(16)} ${'Frecuencia (Tramos)'.padStart(20)} ${'% del Total'.padStart(14)}`,
+      );
       console.log(`  ${'─'.repeat(52)}`);
       for (const d of colDetails) {
         console.log(

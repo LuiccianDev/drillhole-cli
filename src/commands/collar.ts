@@ -1,6 +1,12 @@
 import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
-import type { CollarOptions, CollarResult, LimitResult, ElevationResult, BlockModelBounds } from '../types/index.js';
+import type {
+  CollarOptions,
+  CollarResult,
+  LimitResult,
+  ElevationResult,
+  BlockModelBounds,
+} from '../types/index.js';
 import { floorTo, ceilTo, getMin, getMax } from '../utils/math.js';
 import { COLLAR_COLUMN_MAP } from '../constants/mining.js';
 

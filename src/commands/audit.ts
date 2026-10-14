@@ -1,11 +1,6 @@
 import { parseFile, isMiningSentinel } from '../core/parser.js';
 import { exportData } from './export.js';
-import type {
-  AuditResult,
-  ColumnAudit,
-  AuditOptions,
-  FindingItem,
-} from '../types/index.js';
+import type { AuditResult, ColumnAudit, AuditOptions, FindingItem } from '../types/index.js';
 import { COLLAR_COLUMN_MAP, INTERVAL_COLUMN_MAP } from '../constants/mining.js';
 
 export async function runAudit(file: string, opts: AuditOptions = {}): Promise<AuditResult> {
@@ -77,7 +72,7 @@ export async function runAudit(file: string, opts: AuditOptions = {}): Promise<A
 
     rows.forEach((r, i) => {
       const rowNum = i + 2; // considerando encabezado como fila 1
-      const hole = holeCol ? (r[holeCol]?.trim() || `Row_${rowNum}`) : 'GENERAL';
+      const hole = holeCol ? r[holeCol]?.trim() || `Row_${rowNum}` : 'GENERAL';
       const rawFrom = r[fromCol]?.trim();
       const rawTo = r[toCol]?.trim();
 

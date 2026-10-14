@@ -42,7 +42,7 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
   let targetDir = resolvedDir;
 
   if (!targetFile) {
-    let files: string[] = [];
+    let files: string[];
     try {
       files = getFilesInDir(targetDir);
     } catch {
@@ -82,9 +82,7 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
     };
 
     const patterns = SEMANTIC_PATTERNS[operation] ?? [];
-    const matched = files.find((f) =>
-      patterns.some((p) => f.toLowerCase().includes(p)),
-    );
+    const matched = files.find((f) => patterns.some((p) => f.toLowerCase().includes(p)));
 
     targetFile = matched ?? (files[0] as string);
   }

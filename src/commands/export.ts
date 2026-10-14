@@ -150,10 +150,7 @@ export function exportData(
         'CAMPO'.padEnd(20) + 'TIPO VULCAN'.padEnd(16) + 'LONGITUD'.padStart(10),
         '-'.repeat(46),
         ...schemaData.map(
-          (s) =>
-            s.column.padEnd(20) +
-            s.type.padEnd(16) +
-            String(s.maxLength).padStart(10),
+          (s) => s.column.padEnd(20) + s.type.padEnd(16) + String(s.maxLength).padStart(10),
         ),
       ].join('\n');
     } else {
