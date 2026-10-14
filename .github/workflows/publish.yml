@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch: # Opcional: te permite lanzarlo manualmente si quieres probar
 
 permissions:
   contents: read
@@ -12,27 +13,37 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # OBLIGATORIO porque en npm configuraste este environment:
+    environment: drillhole-cli-github-actions
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        # Si NO tienes "packageManager": "pnpm@..." en tu package.json, descomenta la línea de abajo:
+        # with:
+        #   version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          package-manager-cache: false
           registry-url: https://registry.npmjs.org
+
+      # OBLIGATORIO para que funcione OIDC (Trusted Publishing requiere npm >= 11.5.1)
+      - name: Update npm for OIDC support
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Verify package version
         run: |
-          test "$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME#v}"
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            test "$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME#v}"
+          fi
 
       - name: Validate package
         run: |
