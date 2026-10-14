@@ -42,7 +42,7 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
   let targetDir = resolvedDir;
 
   if (!targetFile) {
-    let files: string[] = [];
+    let files: string[];
     try {
       files = getFilesInDir(targetDir);
     } catch {
