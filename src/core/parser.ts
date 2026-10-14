@@ -2,6 +2,54 @@ import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 import type { Delimiter, ParseResult, ColumnResult } from '../types/index.js';
+import { MINING_SENTINELS } from '../constants/mining.js';
+
+/**
+ * Splits a delimited line respecting quoted fields (e.g., "value, with, comma").
+ * Also removes surrounding quotes from values.
+ */
+export function parseDelimitedLine(line: string, delim: Delimiter): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === delim && !inQuotes) {
+      result.push(cleanFieldValue(current));
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(cleanFieldValue(current));
+  return result;
+}
+
+function cleanFieldValue(val: string): string {
+  const trimmed = val.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+/**
+ * Checks if a value matches standard mining missing/sentinel representations.
+ */
+export function isMiningSentinel(val: string | number | undefined | null): boolean {
+  if (val === undefined || val === null) return true;
+  const str = String(val).trim().toUpperCase();
+  if (!str) return true;
+  return (MINING_SENTINELS as readonly string[]).includes(str);
+}
 
 /**
  * Detects delimiter and gets headers from the first line of a file.
@@ -22,8 +70,13 @@ async function getFileMeta(filepath: string): Promise<{ headers: string[]; delim
     throw new Error(`Archivo vacío o sin datos: ${filepath}`);
   }
 
+  // Strip UTF-8 BOM if present
+  if (firstLine.charCodeAt(0) === 0xfeff) {
+    firstLine = firstLine.slice(1);
+  }
+
   const delim: Delimiter = firstLine.includes('\t') ? '\t' : ',';
-  const headers = firstLine.split(delim).map((h) => h.trim());
+  const headers = parseDelimitedLine(firstLine, delim);
 
   return { headers, delim };
 }
@@ -77,7 +130,7 @@ export async function parseFile<T extends Record<string, string> = Record<string
       }
       if (!line.trim()) continue;
 
-      const vals = line.split(delim);
+      const vals = parseDelimitedLine(line, delim);
       const row = {} as T;
       for (let i = 0; i < headers.length; i++) {
         const h = headers[i];
@@ -135,7 +188,7 @@ export async function parseColumns<T extends Record<string, string> = Record<str
       }
       if (!line.trim()) continue;
 
-      const vals = line.split(delim);
+      const vals = parseDelimitedLine(line, delim);
       for (let i = 0; i < headers.length; i++) {
         const h = headers[i];
         if (h && columns[h as keyof T & string] !== undefined) {

@@ -66,20 +66,17 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
   const filePath = `${baseDir}/${file}`;
 
   // 4. Formato exportación
-  let output: string | undefined;
-  if (operation !== 'audit' && operation !== 'schema') {
-    output = checkCancel(
-      await select({
-        message: 'Formato de exportación:',
-        options: [
-          { value: 'txt', label: 'TXT — bloque de notas' },
-          { value: 'csv', label: 'CSV — Excel / Vulcan' },
-          { value: 'none', label: 'No exportar — solo mostrar en pantalla' },
-        ],
-      }),
-    ) as string;
-    if (output === 'none') output = undefined;
-  }
+  let output: string | undefined = checkCancel(
+    await select({
+      message: 'Formato de exportación:',
+      options: [
+        { value: 'txt', label: 'TXT — bloque de notas / reporte' },
+        { value: 'csv', label: 'CSV — Excel / Vulcan' },
+        { value: 'none', label: 'No exportar — solo mostrar en pantalla' },
+      ],
+    }),
+  ) as string;
+  if (output === 'none') output = undefined;
 
   const opts: CliOptions = { output, baseDir };
 
@@ -89,7 +86,7 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
       await text({
         message: 'Valor fijo de buffer (0 = sin buffer):',
         defaultValue: '0',
-        validate: (v) =>
+        validate: (v: string | undefined) =>
           v === undefined || isNaN(parseFloat(v)) ? 'Ingresa un número' : undefined,
       }),
     ) as string;
@@ -150,7 +147,7 @@ export async function runCli(baseDir: string, globalOpts: CliGlobalOptions = {})
       await text({
         message: 'Número de clases para rangos (ej: 6, 7):',
         defaultValue: '6',
-        validate: (v) =>
+        validate: (v: string | undefined) =>
           v === undefined || isNaN(parseInt(v)) || parseInt(v) < 2 ? 'Mínimo 2' : undefined,
       }),
     ) as string;

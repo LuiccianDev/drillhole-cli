@@ -1,8 +1,11 @@
 import { parseColumns } from '../core/parser.js';
+import { exportData } from './export.js';
 import type { SchemaResult, VulcanDataType, SchemaOptions } from '../types/index.js';
 
+const DATE_REGEX = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$|^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/;
+
 export async function runSchema(file: string, opts: SchemaOptions = {}): Promise<SchemaResult> {
-  // Solo necesitamos una muestra para inferir tipos, pero por seguridad analizamos más
+  // Analizamos una muestra amplia para inferir tipos con seguridad
   const { headers, columns } = await parseColumns(file, 500, undefined, opts.baseDir);
 
   const schema: SchemaResult = headers.map((h) => {
@@ -12,6 +15,7 @@ export async function runSchema(file: string, opts: SchemaOptions = {}): Promise
     let isNumeric = true;
     let hasDecimals = false;
     let maxLen = 0;
+    let isAllDates = true;
 
     for (const v of vals) {
       if (isNaN(Number(v))) {
@@ -19,6 +23,11 @@ export async function runSchema(file: string, opts: SchemaOptions = {}): Promise
       } else {
         if (v.includes('.')) hasDecimals = true;
       }
+
+      if (!DATE_REGEX.test(v.trim())) {
+        isAllDates = false;
+      }
+
       if (v.length > maxLen) maxLen = v.length;
     }
 
@@ -31,7 +40,12 @@ export async function runSchema(file: string, opts: SchemaOptions = {}): Promise
       }
     }
 
-    return { column: h, type, maxLength: maxLen };
+    return {
+      column: h,
+      type,
+      maxLength: maxLen,
+      isDate: !isNumeric && isAllDates,
+    };
   });
 
   return schema;
@@ -39,16 +53,27 @@ export async function runSchema(file: string, opts: SchemaOptions = {}): Promise
 
 export function printSchema(schema: SchemaResult) {
   console.log('\n=== INFERRED VULCAN SCHEMA ===');
-  console.table(schema);
-  console.log('\nTipos Sugeridos:');
-  console.log(' - integer: Números enteros');
-  console.log(' - single : Decimales cortos');
-  console.log(' - double : Decimales de alta precisión');
-  console.log(' - text   : Cadenas de caracteres');
+  console.table(
+    schema.map((s) => ({
+      Columna: s.column,
+      'Tipo Vulcan': s.type,
+      'Longitud Max': s.maxLength,
+      Formato: s.isDate ? 'Date (YYYY-MM-DD)' : s.type,
+    })),
+  );
+  console.log('\nTipos Vulcan Oficiales:');
+  console.log(' - integer: Entero de 4 bytes (ej. identificadores, códigos numéricos)');
+  console.log(' - single : Flotante de precisión simple (ej. leyes, porcentajes)');
+  console.log(' - double : Flotante de doble precisión (ej. coordenadas UTM Este/Norte)');
+  console.log(' - text   : Cadena alfanumérica / nombres y litologías');
 }
 
 export default async function schemaCmd(file: string, opts: SchemaOptions = {}) {
   const result = await runSchema(file, opts);
   printSchema(result);
+  if (opts.output) {
+    const f = exportData(result, 'schema_report', opts.output as 'csv' | 'txt');
+    console.log(`\nExportado: ${f}`);
+  }
   return result;
 }

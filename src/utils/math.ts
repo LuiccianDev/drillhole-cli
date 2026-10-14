@@ -56,3 +56,52 @@ export function getMax(arr: number[]): number {
   }
   return max;
 }
+
+/**
+ * Calculates arithmetic mean of an array of numbers.
+ */
+export function getMean(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i] ?? 0;
+  }
+  return +(sum / arr.length).toFixed(4);
+}
+
+/**
+ * Calculates median (P50) from a sorted array.
+ */
+export function getMedian(sorted: number[]): number {
+  return percentile(sorted, 50);
+}
+
+/**
+ * Calculates sample variance (divided by n-1 if n > 1).
+ */
+export function getVariance(arr: number[], mean: number): number {
+  if (arr.length <= 1) return 0;
+  let sumDiffSq = 0;
+  for (let i = 0; i < arr.length; i++) {
+    const diff = (arr[i] ?? 0) - mean;
+    sumDiffSq += diff * diff;
+  }
+  return +(sumDiffSq / (arr.length - 1)).toFixed(6);
+}
+
+/**
+ * Calculates sample standard deviation.
+ */
+export function getStdDev(arr: number[], mean: number): number {
+  if (arr.length <= 1) return 0;
+  const variance = getVariance(arr, mean);
+  return +Math.sqrt(variance).toFixed(4);
+}
+
+/**
+ * Calculates Coefficient of Variation (CV = stdDev / mean).
+ */
+export function getCoefficientOfVariation(stdDev: number, mean: number): number {
+  if (mean === 0) return 0;
+  return +(stdDev / Math.abs(mean)).toFixed(4);
+}

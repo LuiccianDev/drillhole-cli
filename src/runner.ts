@@ -39,22 +39,63 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
 
   // Buscar archivo si no se especificó
   let targetFile = file;
+  let targetDir = resolvedDir;
+
   if (!targetFile) {
-    const files = getFilesInDir(resolvedDir);
+    let files: string[] = [];
+    try {
+      files = getFilesInDir(targetDir);
+    } catch {
+      files = [];
+    }
+
+    // Si la carpeta actual no tiene archivos, revisar subdirectorios comunes
+    if (files.length === 0) {
+      for (const sub of ['data', 'data_tests', 'csv', 'sondajes']) {
+        const subPath = path.join(targetDir, sub);
+        if (fs.existsSync(subPath) && fs.statSync(subPath).isDirectory()) {
+          try {
+            const subFiles = getFilesInDir(subPath);
+            if (subFiles.length > 0) {
+              targetDir = subPath;
+              files = subFiles;
+              break;
+            }
+          } catch {
+            // continuar
+          }
+        }
+      }
+    }
+
     if (files.length === 0) {
       console.error(`Error: No hay archivos .csv/.txt en: ${dir}`);
       process.exit(1);
     }
-    targetFile = files[0] as string;
+
+    // Coincidencia semántica con la operación
+    const SEMANTIC_PATTERNS: Record<string, string[]> = {
+      collar: ['collar', 'header', 'head'],
+      assay: ['assay', 'ensayo', 'cut', 'grade', 'ley'],
+      litho: ['litho', 'rock', 'lito', 'geo', 'rx'],
+      schema: ['header', 'collar', 'assay', 'litho'],
+    };
+
+    const patterns = SEMANTIC_PATTERNS[operation] ?? [];
+    const matched = files.find((f) =>
+      patterns.some((p) => f.toLowerCase().includes(p)),
+    );
+
+    targetFile = matched ?? (files[0] as string);
   }
 
-  const filePath = path.join(resolvedDir, targetFile);
+  const filePath = path.join(targetDir, targetFile);
   if (!fs.existsSync(filePath)) {
-    console.error(`Error: Archivo no encontrado: ${targetFile} en ${dir}`);
+    console.error(`Error: Archivo no encontrado: ${targetFile} en ${targetDir}`);
     process.exit(1);
   }
 
-  const baseOpts = { baseDir: resolvedDir, output: format };
+  const baseOpts = { baseDir: targetDir, output: format };
 
   // Construir opciones específicas según operación
   let result: CommandResult | undefined;
@@ -93,7 +134,7 @@ export async function runNonInteractive(opts: RunnerOptions): Promise<void> {
   }
 
   // Exportar si se especificó formato
-  if (format && result && operation !== 'audit' && operation !== 'schema') {
+  if (format && result) {
     const label = OP_LABELS[operation] ?? operation;
     const f = exportData(result as ExportData, label, format, outdir);
     const files = Array.isArray(f) ? f : [f];

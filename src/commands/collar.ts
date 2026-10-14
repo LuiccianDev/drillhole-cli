@@ -1,6 +1,6 @@
 import { parseColumns } from '../core/parser.js';
 import { exportData } from './export.js';
-import type { CollarOptions, CollarResult, LimitResult, ElevationResult } from '../types/index.js';
+import type { CollarOptions, CollarResult, LimitResult, ElevationResult, BlockModelBounds } from '../types/index.js';
 import { floorTo, ceilTo, getMin, getMax } from '../utils/math.js';
 import { COLLAR_COLUMN_MAP } from '../constants/mining.js';
 
@@ -99,26 +99,46 @@ export async function runCollar(file: string, opts: CollarOptions = {}): Promise
     source: source,
   };
 
+  // Cálculo de parámetros de modelo de bloques para Maptek Vulcan (.bdf)
+  const dx = +(easting.max_boundary - easting.min_boundary).toFixed(2);
+  const dy = +(northing.max_boundary - northing.min_boundary).toFixed(2);
+  const dz = +(elevation.max_boundary - elevation.min_boundary).toFixed(2);
+
+  const blockModel: BlockModelBounds = {
+    origin: {
+      x: easting.min_boundary,
+      y: northing.min_boundary,
+      z: elevation.min_boundary,
+    },
+    extents: { dx, dy, dz },
+    centroid: {
+      x: +(easting.min_boundary + dx / 2).toFixed(2),
+      y: +(northing.min_boundary + dy / 2).toFixed(2),
+      z: +(elevation.min_boundary + dz / 2).toFixed(2),
+    },
+  };
+
   return {
     EASTING: easting,
     NORTHING: northing,
     ELEVATION: elevation,
     LENGTH: length,
     _headers: usedHeaders,
+    blockModel,
   };
 }
 
 export function printCollar(result: CollarResult): void {
-  console.log('\n=== COLLAR LIMITS ===');
+  console.log('\n=== COLLAR LIMITS & SPATIAL EXTENTS ===');
 
-  const { EASTING, NORTHING, ELEVATION, LENGTH } = result;
+  const { EASTING, NORTHING, ELEVATION, LENGTH, blockModel } = result;
 
-  console.log('\nEASTING:');
+  console.log('\nEASTING (X):');
   console.log(`  raw         : [${EASTING.raw_min}, ${EASTING.raw_max}]`);
   console.log(`  min_boundary: ${EASTING.min_boundary}`);
   console.log(`  max_boundary: ${EASTING.max_boundary}`);
 
-  console.log('\nNORTHING:');
+  console.log('\nNORTHING (Y):');
   console.log(`  raw         : [${NORTHING.raw_min}, ${NORTHING.raw_max}]`);
   console.log(`  min_boundary: ${NORTHING.min_boundary}`);
   console.log(`  max_boundary: ${NORTHING.max_boundary}`);
@@ -133,6 +153,19 @@ export function printCollar(result: CollarResult): void {
 
   console.log('\nLENGTH (informativo):');
   console.log(`  min: ${LENGTH.raw_min}  max: ${LENGTH.raw_max} (${LENGTH.source})`);
+
+  if (blockModel) {
+    console.log('\n=== VULCAN BLOCK MODEL FRAMEWORK (.bdf) ===');
+    console.log(
+      `  Origin (X, Y, Z)   : (${blockModel.origin.x}, ${blockModel.origin.y}, ${blockModel.origin.z})`,
+    );
+    console.log(
+      `  Extents (DX, DY, DZ): ${blockModel.extents.dx}m x ${blockModel.extents.dy}m x ${blockModel.extents.dz}m`,
+    );
+    console.log(
+      `  Centroid (Xc, Yc, Zc): (${blockModel.centroid.x}, ${blockModel.centroid.y}, ${blockModel.centroid.z})`,
+    );
+  }
 }
 
 export default async function collarCmd(file: string, opts: CollarOptions) {
