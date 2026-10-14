@@ -10,81 +10,98 @@ The tool automates five common mining-data tasks: data quality auditing, spatial
 
 ## Use Cases
 
-| Who | When | Why |
-|---|---|---|
-| Field geologist | After receiving assay results from the lab | Quickly audit data quality before importing to Vulcan |
-| Data technician | Preparing block model limits | Calculate rounded collar boundaries with buffer for mine planning |
-| Exploration manager | Reviewing grade distribution across a deposit | Generate percentile-based assay ranges for resource estimation |
-| Modeler | Building a lithological model | Extract unique rock codes for legend definition |
-| AI agent | Automating data processing | Invoke `drill` non-interactively as part of a pipeline |
+| Who                 | When                                          | Why                                                               |
+| ------------------- | --------------------------------------------- | ----------------------------------------------------------------- |
+| Field geologist     | After receiving assay results from the lab    | Quickly audit data quality before importing to Vulcan             |
+| Data technician     | Preparing block model limits                  | Calculate rounded collar boundaries with buffer for mine planning |
+| Exploration manager | Reviewing grade distribution across a deposit | Generate percentile-based assay ranges for resource estimation    |
+| Modeler             | Building a lithological model                 | Extract unique rock codes for legend definition                   |
+| AI agent            | Automating data processing                    | Invoke `drill` non-interactively as part of a pipeline            |
 
 ---
 
 ## Tech Stack
 
-| Component | Choice | Reason |
-|---|---|---|
-| Runtime | Node.js 18+ | Ubiquitous, fast startup, excellent stream support |
-| Language | TypeScript (strict mode) | Type safety for mining calculations (no NaN surprises) |
-| Package manager | pnpm | Fast, disk-efficient, strict dependency resolution |
-| CLI framework | `@clack/prompts` | Interactive prompts with cancel support and spinner animation |
-| Banner | `figlet` | ASCII art for the interactive welcome screen |
-| Module format | ES Modules (`"type": "module"`) | Modern JavaScript standard, tree-shakeable |
-| Runner | `tsx` | Execute TypeScript directly without a build step |
-| Parser | Custom (Node.js Streams + Readline) | Memory-efficient for large drillhole datasets |
+| Component       | Choice                              | Reason                                                        |
+| --------------- | ----------------------------------- | ------------------------------------------------------------- |
+| Runtime         | Node.js 18+                         | Ubiquitous, fast startup, excellent stream support            |
+| Language        | TypeScript (strict mode)            | Type safety for mining calculations (no NaN surprises)        |
+| Package manager | pnpm                                | Fast, disk-efficient, strict dependency resolution            |
+| CLI framework   | `@clack/prompts`                    | Interactive prompts with cancel support and spinner animation |
+| Banner          | `figlet`                            | ASCII art for the interactive welcome screen                  |
+| Module format   | ES Modules (`"type": "module"`)     | Modern JavaScript standard, tree-shakeable                    |
+| Runner          | `tsx`                               | Execute TypeScript directly without a build step              |
+| Parser          | Custom (Node.js Streams + Readline) | Memory-efficient for large drillhole datasets                 |
 
 ---
 
 ## Capabilities
 
-### Audit (`--audit`)
-Validates data integrity:
-- Total rows, columns, and null values
-- Detects numeric vs text columns
-- Useful as a first step before any other operation
+### Audit (`audit` or `--audit`)
 
-### Collar Limits (`--collar`)
-Calculates spatial boundaries with Vulcan-specific rounding:
-- **Easting/Northing**: rounded to nearest 100 (block model alignment)
-- **Elevation**: rounded to nearest 10, accounting for maximum drillhole length
-- **Buffer**: user-defined margin applied outward from rounded boundaries
-- Uses directional rounding: `floor` for minimum, `ceil` for maximum
+Performs rigorous geological database QA/QC:
 
-### Assay Ranges (`--assay`)
-Percentile-based grade analysis:
-- Divides numeric assay values into N equal-width percentile classes
-- Reports min, max, and percentile boundaries per class
-- Useful for defining grade shells in resource estimation
+- Detects inverted downhole intervals ($FROM \ge TO$, `CRITICAL`)
+- Detects overlapping intervals ($FROM_i < TO_{i-1}$, `WARNING`)
+- Detects un-sampled gaps ($FROM_i > TO_{i-1}$, `INFO`)
+- Detects duplicate hole IDs in collar files and origin `(0,0)` coordinates (`CRITICAL`)
+- Identifies mining sentinel codes (`-999`, `-99`, `NA`) and grades $> 100\%$ (`WARNING`)
+- Reports total rows, columns, nulls, and numeric columns
 
-### Litho Values (`--litho`)
-Extracts unique geological codes:
-- Sorted, deduplicated list from lithology or rock-code columns
-- Output formatted for Vulcan legend definition
+### Collar Limits & Vulcan Block Model (`collar` or `--collar`)
 
-### Schema Inference (`--schema`)
-Detects Vulcan-compatible data types:
-- `integer` — whole numbers
-- `single` — short decimals (up to 10 characters)
-- `double` — long decimals (over 10 characters)
-- `text` — string values
-- Samples up to 500 rows for type inference
+Calculates spatial boundaries with directional rounding and Vulcan BDF parameters:
+
+- **Easting/Northing**: rounded to nearest 100m for block model alignment
+- **Elevation**: rounded to nearest 10m, accounting for maximum drillhole length (`LENGTH`)
+- **Buffer**: user-defined margin applied outward (`-b 50`)
+- **Vulcan `.bdf` Framework**: Origin $(X, Y, Z)$, Extents $(\Delta X, \Delta Y, \Delta Z)$, and Centroid $(X_c, Y_c, Z_c)$
+
+### Assay Descriptive Statistics (`assay` or `--assay`)
+
+Performs comprehensive grade analysis with sentinel exclusion:
+
+- Excludes `-999`, `-99`, and `NA` to avoid statistical distortion
+- Calculates Mean ($\mu$), Median ($P_{50}$), Standard Deviation ($\sigma$), Variance ($\sigma^2$), and $CV$
+- Divides grade distributions into $N$ percentile classes with sample counts and percentages
+- Essential for defining cutoff grades and grade shells in resource estimation
+
+### Lithology Distribution (`litho` or `--litho`)
+
+Extracts unique rock and alteration codes:
+
+- Calculates frequency count (number of intervals) and dataset percentage for each code
+- Formatted directly for Vulcan `.dgd` legend definition tables
+
+### Schema Inference (`schema` or `--schema`)
+
+Infers Maptek Vulcan Isis database data types:
+
+- `integer` — whole numbers (4-byte int)
+- `single` — short decimals (4-byte float)
+- `double` — high-precision coordinates (8-byte double float)
+- `text` — alphanumeric string values
+- `date` — detected if formatted as `YYYY-MM-DD` or `DD/MM/YYYY`
 
 ---
 
 ## Execution Modes
 
-### Interactive (human)
+### Interactive (Human-driven)
 
 ```bash
-drill --dir ./data
+drill
 ```
 
 Shows an animated ASCII banner, then guides through operation selection, file selection, and option configuration via `@clack/prompts` menus.
 
-### Non-interactive (AI / automation)
+### Non-interactive (Modern Dynamic CLI / AI automation)
 
 ```bash
-drill --dir ./data --no-banner --collar --file collar.csv --buffer 50 --format csv
+# Direct positional syntax (no --dir or --file needed):
+drill collar ./data/collar.csv -b 50 -f csv -q
+drill audit ./data/assays.txt -f csv -q
+drill assay ./data/assays.txt -c 8 -q
 ```
 
 ---
@@ -157,7 +174,6 @@ pnpm drill      # Run interactively (dev mode with tsx)
 pnpm build      # Compile TypeScript to dist/
 pnpm test       # Run test suite (32 tests)
 ```
-
 
 ### Adding a new command
 

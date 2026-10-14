@@ -5,6 +5,7 @@ This document provides high-level architectural context, domain knowledge, and o
 ---
 
 ## Project Identity & Purpose
+
 `drill-cli` (`@luicciandev/drillhole-cli`) is a high-performance command-line tool built for exploration geologists, resource geologists, and mining data technicians. It processes drillhole data (`.csv`, `.txt`) using Node.js streaming I/O to perform data quality validation (QA/QC), spatial boundary calculations, descriptive grade statistics, and Vulcan-compatible database exports.
 
 **Primary Target**: Maptek Vulcan 3D mining software (including Isis, GeologyCore, and Block Definition Files `.bdf`).
@@ -12,6 +13,7 @@ This document provides high-level architectural context, domain knowledge, and o
 ---
 
 ## Tech Stack
+
 - **Runtime**: Node.js (v18+)
 - **Language**: TypeScript v5+ (Strict Mode)
 - **Module System**: ES Modules (`"type": "module"`)
@@ -93,6 +95,7 @@ drillhole-cli/
 AI agents invoking the CLI programmatically **must always use non-interactive mode**:
 
 ### Rules for Automated Invocations:
+
 1. **Pass the file path directly** (positional argument) or use `--dir` + `--file`. The CLI automatically extracts the directory and filename.
 2. **Always pass `-q` or `--no-banner`** to suppress ASCII animations.
 3. Pass exactly one operation (as a subcommand or flag) per invocation.
@@ -142,6 +145,8 @@ pnpm drill --help
 ---
 
 ## Verification & Testing
+
 Before committing any changes:
+
 1. Run `npx tsx tests/run.ts` (all 66+ tests must pass).
 2. Run `npx tsc --noEmit` to verify strict TypeScript type checking.

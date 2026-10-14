@@ -5,6 +5,7 @@
 The primary security concern for `@luicciandev/drillhole-cli` is **unauthorized file access via path traversal**. Since the tool reads files from a user-specified directory and can be invoked by AI agents or scripts, an attacker could craft a `--file` argument containing `../` sequences to read files outside the intended directory.
 
 Secondary concerns:
+
 - **File type confusion**: loading non-CSV/TXT files that may contain sensitive data
 - **Argument injection**: malformed flags causing unexpected behavior
 
@@ -119,13 +120,13 @@ No data is written to disk unless the user explicitly requests export via `--for
 
 When invoked by AI agents (non-interactive mode), the following constraints apply:
 
-| Risk | Mitigation |
-|---|---|
-| Path traversal via `--file` | `validateSafePath` checks against `--dir` |
-| Reading arbitrary file types | Extension whitelist (`.csv`/`.txt` only) |
-| Multiple conflicting operations | Only first operation flag is processed |
-| Large files causing OOM | Stream-based parsing with configurable row limits |
-| Malformed numeric data | `parseFloat` + `isNaN` filtering in all commands |
+| Risk                            | Mitigation                                        |
+| ------------------------------- | ------------------------------------------------- |
+| Path traversal via `--file`     | `validateSafePath` checks against `--dir`         |
+| Reading arbitrary file types    | Extension whitelist (`.csv`/`.txt` only)          |
+| Multiple conflicting operations | Only first operation flag is processed            |
+| Large files causing OOM         | Stream-based parsing with configurable row limits |
+| Malformed numeric data          | `parseFloat` + `isNaN` filtering in all commands  |
 
 ---
 
@@ -156,3 +157,28 @@ If you add another way to read file paths (e.g., from a config file):
 - Never use `child_process.exec` or `eval` with user input
 - Never bypass `validateSafePath` for performance reasons
 - Never use `process.cwd()` as the sole root — prefer the user-supplied `--dir`
+
+---
+
+## 6. CI/CD & GitHub Actions Security
+
+The repository uses GitHub Actions for continuous integration (`.github/workflows/ci.yml`) and automated package publishing (`.github/workflows/publish.yml`). The following security principles are enforced:
+
+### 6.1 Principle of Least Privilege (Permissions)
+
+- **CI Workflow (`ci.yml`)**: Restricts the default `GITHUB_TOKEN` to `permissions: contents: read`. No write or administration capabilities are granted.
+- **Publish Workflow (`publish.yml`)**: Only requests `contents: read` and `id-token: write` specifically required for OpenID Connect (OIDC) token exchange with npm.
+
+### 6.2 OIDC / Trusted Publishing (Zero Static Secret Leaks)
+
+- **No Long-Lived NPM Tokens**: The package publishing workflow uses npm Trusted Publishing via OIDC. No `NPM_TOKEN` is stored in GitHub Repository Secrets. This eliminates the risk of credential leakage via workflow tampering or build log exposure.
+- **Provenance Attestation**: Packages are published with `--provenance`, cryptographically linking each published artifact on npm back to the specific GitHub commit and workflow execution.
+
+### 6.3 Shell Injection Prevention
+
+- All untrusted dynamic contexts (such as `github.ref_name` and `github.event_name`) are mapped into environment variables (`env:`) before being evaluated in shell scripts, preventing CWE-78 argument and command injection.
+
+### 6.4 Resource Protection & Concurrency
+
+- Workflows specify explicit execution timeouts (`timeout-minutes: 10` / `15`) to prevent rogue infinite loops or stalled network requests.
+- Concurrency controls (`cancel-in-progress: true` on PRs) cancel obsolete runs to minimize redundant runner execution and avoid race conditions.

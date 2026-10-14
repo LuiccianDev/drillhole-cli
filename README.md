@@ -2,7 +2,7 @@
 
 <img src="docs/img/logo-drillhole-cli.webp" alt="Drillhole CLI Logo" />
 
-**Professional mining data engineering & QA/QC assistant for Maptek Vulcan**
+**High-performance mining data engineering & QA/QC validation CLI for Maptek Vulcan**
 
 [![npm version](https://img.shields.io/npm/v/@luicciandev/drillhole-cli?style=flat-square)](https://www.npmjs.com/package/@luicciandev/drillhole-cli)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-3c873a?style=flat-square)](https://nodejs.org)
@@ -12,41 +12,102 @@
 [![Mining](https://img.shields.io/badge/Mining-Vulcan%20Ready-8B4513?style=flat-square)](https://www.maptek.com/products/vulcan/)
 [![Built with](https://img.shields.io/badge/Built%20with-pnpm-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io)
 
-[Installation](#installation) • [Key Features](#key-features) • [Usage](#usage) • [Commands](#commands) • [Examples](#examples) • [Exports](#exports) • [Interactive Mode](#interactive-mode) • [Development](#development)
+[Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [Workflow](#workflow) • [Commands](#commands) • [Examples](#examples) • [Exports](#exports) • [Interactive Mode](#interactive-mode) • [Development](#development)
 
 </div>
 
-`@luicciandev/drillhole-cli` is a high-performance command-line tool designed for exploration geologists, resource geologists, and mining data technicians. It processes drillhole datasets (`.csv`, `.txt`) using streaming I/O to perform geological data validation, descriptive assay statistics, lithological code distributions, and spatial boundary math formatted specifically for **Maptek Vulcan** (including Isis, GeologyCore, and Block Definition Files `.bdf`).
+`@luicciandev/drillhole-cli` is a high-performance command-line tool built for exploration geologists, resource estimation geologists, and mining data technicians. It processes drillhole datasets (`.csv`, `.txt`) using Node.js streaming I/O to perform automated QA/QC data validation, descriptive assay statistics, lithological code distributions, and spatial boundary calculations formatted specifically for **Maptek Vulcan** (including Isis, GeologyCore, and Block Definition Files `.bdf`).
 
 ---
 
-## Key Features
+## Quick Start
 
-- **Geological QA/QC & Audit Engine (`--audit`)**:
-  - Automatically identifies file types (`COLLAR`, `INTERVAL`, `LITHO`, `GENERIC`).
-  - Detects inverted intervals ($FROM \ge TO$, `CRITICAL`).
-  - Flags overlapping intervals downhole ($FROM_i < TO_{i-1}$, `WARNING`).
-  - Identifies unsampled gaps and missing runs ($FROM_i > TO_{i-1}$, `INFO`).
-  - Detects duplicate hole IDs in collar files and invalid/origin `(0,0)` coordinates.
-  - Recognizes mining sentinel codes (`-999`, `-99`, `NA`) and impossible grades ($> 100\%$).
-- **Vulcan Block Model Grid Limits (`--collar`)**:
-  - Applies directional rounding (floor for minimums, ceil for maximums) to align with parent block dimensions.
-  - Automatically factors in drillhole total depth (`LENGTH`) for bottom elevation boundaries.
-  - Computes Vulcan `.bdf` parameters: **Origin** $(X_{min}, Y_{min}, Z_{min})$, **Extents** $(\Delta X, \Delta Y, \Delta Z)$, and **Centroid** $(X_c, Y_c, Z_c)$.
-- **Descriptive Grade Statistics (`--assay`)**:
-  - Excludes sentinel/missing codes (`-999`, `-99`) from grade calculations to prevent distribution distortion.
-  - Calculates Mean ($\mu$), Median ($P_{50}$), Standard Deviation ($\sigma$), Variance ($\sigma^2$), and Coefficient of Variation ($CV$).
-  - Produces percentile-based class ranges with sample frequency and percentage of total dataset.
-- **Lithological Frequency & Legend (`--litho`)**:
-  - Extracts unique rock and alteration codes with interval occurrence counts and percentages for Vulcan `.dgd` legend creation.
-- **Vulcan Schema Specification (`--schema`)**:
+```bash
+# 1. Install globally
+npm install -g @luicciandev/drillhole-cli
+
+# 2. Audit drillhole file for errors (overlaps, gaps, inverted intervals)
+drill audit ./data/assays.txt
+
+# 3. Calculate collar limits & Vulcan block model (.bdf) boundaries
+drill collar ./data/collar.csv -b 50 -f csv
+
+# 4. Generate assay statistics (mean, median, CV, percentiles)
+drill assay ./data/assays.txt -c 8
+
+# 5. Or launch the interactive terminal wizard
+drill
+```
+
+---
+
+## Features
+
+- **Geological QA/QC & Integrity Engine (`audit`)**:
+  - Automatically identifies file type: `COLLAR`, `INTERVAL`, `LITHO`, or `GENERIC`.
+  - Flags inverted intervals where $FROM \ge TO$ (`CRITICAL`).
+  - Detects overlapping downhole intervals for the same drillhole ($FROM_i < TO_{i-1}$, `WARNING`).
+  - Highlights un-sampled gaps and missing runs ($FROM_i > TO_{i-1}$, `INFO`).
+  - Identifies duplicate hole IDs in collar files and invalid or origin `(0,0)` coordinates (`CRITICAL`).
+  - Recognizes mining sentinel codes (`-999`, `-99`, `NA`) and physically impossible percentage grades ($> 100\%$, `WARNING`).
+- **Vulcan Block Model Framework (`collar`)**:
+  - Implements **directional rounding** (floor for minimums, ceil for maximums) to align with parent block grids.
+  - Automatically factors in drillhole total depth (`LENGTH`) to enclose the deposit at depth.
+  - Computes complete Vulcan `.bdf` parameters: **Origin** $(X_{min}, Y_{min}, Z_{min})$, **Extents** $(\Delta X, \Delta Y, \Delta Z)$, and **Centroid** $(X_c, Y_c, Z_c)$.
+- **Descriptive Grade Statistics (`assay`)**:
+  - Excludes sentinel/missing codes (`-999`, `-99`, `NA`) so statistical distributions reflect true grades.
+  - Calculates Mean ($\mu$), Median ($P_{50}$), Standard Deviation ($\sigma$), Variance ($\sigma^2$), and Coefficient of Variation ($CV = \sigma / \mu$).
+  - Produces customizable percentile class ranges with exact sample counts and percentage breakdowns.
+- **Lithology Frequency & Legend (`litho`)**:
+  - Extracts unique rock and alteration codes with occurrence counts and dataset percentages for Vulcan `.dgd` legend generation.
+- **Vulcan Schema Type Inference (`schema`)**:
   - Infers Vulcan database field data types: `integer`, `single`, `double`, `text`, and date formats (`YYYY-MM-DD`).
-- **Resilient Stream Parser**:
-  - Zero-memory-leak Node.js stream processing capable of handling multi-million-row drillhole dumps.
-  - Handles CSV fields enclosed in quotes containing commas (e.g. `"Hydrothermal breccia, silicified"`).
+- **Resilient & Dynamic Parser**:
+  - Constant $O(1)$ memory consumption via Node.js streams; handles multi-million-row drillhole dumps effortlessly.
+  - Parses CSV fields containing internal commas within double quotes (e.g. `"Breccia, silicified"`).
   - Automatically strips UTF-8 BOM (`\uFEFF`) from Excel exports.
+  - Dynamic file path resolution: pass `./data/assays.txt` directly without separating `--dir` and `--file`.
+  - Smart auto-detection: running `drill collar` without arguments automatically searches for matching collar files in the working directory or subfolders (`data/`, `data_tests/`).
+  - Typo suggestions: typing `drill colr` suggests `Did you mean "collar"?`.
 - **Universal Exporter**:
-  - Generates timestamped, non-destructive CSV and TXT exports for all commands into `./exports/`.
+  - Exports structured CSV and human-readable TXT files into `./exports/` with non-destructive timestamps.
+
+---
+
+## Workflow
+
+```mermaid
+flowchart TD
+    subgraph Data["1. Input Drillhole Data (.csv / .txt)"]
+        RawData["Collar, Survey, Assay, Lithology"]
+    end
+
+    subgraph Core["2. drillhole-cli Engine"]
+        Parser["Resilient Stream Parser\n(Quotes, BOM, Sentinels)"]
+        Router{"Operation"}
+
+        Router -->|audit| AuditEng["QA/QC Validation Engine\n(Inverted, Overlaps, Gaps, Collars)"]
+        Router -->|collar| CollarEng["Spatial Math & Directional Rounding\n(Origin, Extents, Centroid)"]
+        Router -->|assay| AssayEng["Descriptive Statistics\n(Mean, Median, StdDev, CV, Percentiles)"]
+        Router -->|litho| LithoEng["Lithology Analysis\n(Frequencies & Percentages)"]
+        Router -->|schema| SchemaEng["Vulcan Schema Inference\n(Types, Widths, Dates)"]
+    end
+
+    subgraph Target["3. Target Mining Deliverables"]
+        AuditOut["Quality Audit Report (CSV/TXT)"]
+        CollarOut["Vulcan BDF Block Model Grid"]
+        AssayOut["Grade Distribution & Classes"]
+        LithoOut["Vulcan .dgd Rock Legend Table"]
+        SchemaOut["Isis Database Schema Spec"]
+    end
+
+    RawData --> Parser --> Router
+    AuditEng --> AuditOut
+    CollarEng --> CollarOut
+    AssayEng --> AssayOut
+    LithoEng --> LithoOut
+    SchemaEng --> SchemaOut
+```
 
 ---
 
@@ -56,7 +117,7 @@
 npm install -g @luicciandev/drillhole-cli
 ```
 
-Once installed globally, the `drill` binary is ready to use:
+Verify installation:
 
 ```bash
 drill --version
@@ -65,46 +126,39 @@ drill --help
 
 ---
 
-## Usage
+## Commands
 
 ```bash
-# Modern dynamic syntax (recommended):
 drill <command> [file-path] [options]
-
-# Interactive wizard:
-drill
-
-# Legacy flag syntax (fully supported for backwards compatibility):
-drill --collar --dir ./project-data --file collar.csv
 ```
 
-### Subcommands
+### Primary Subcommands
 
-| Command | Description |
-|---|---|
-| `audit [file]` | Run geological database QA/QC (validates intervals, overlaps, gaps, collars, and sentinels) |
-| `collar [file]` | Compute spatial boundaries and Vulcan Block Model Framework (`.bdf`) origin and extents |
-| `assay [file]` | Generate descriptive statistics ($\mu, P_{50}, \sigma, CV$) and percentile grade bins |
-| `litho [file]` | Generate unique lithological code legend with sample counts and relative percentages |
-| `schema [file]` | Infer Maptek Vulcan field types (`integer`, `single`, `double`, `text`, `date`) |
+| Subcommand      | Description                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| `audit [file]`  | Run geological database QA/QC (validates intervals, overlaps, gaps, collars, and sentinels) |
+| `collar [file]` | Compute spatial boundaries and Vulcan Block Model Framework (`.bdf`) origin and extents     |
+| `assay [file]`  | Generate descriptive grade statistics ($\mu, P_{50}, \sigma, CV$) and percentile classes    |
+| `litho [file]`  | Generate unique lithological code legend with sample counts and relative percentages        |
+| `schema [file]` | Infer Maptek Vulcan field types (`integer`, `single`, `double`, `text`, `date`)             |
 
 ### Options & Short Flags
 
-| Option | Short | Description |
-|---|---|---|
-| `[file-path]` | (positional) | Direct path to file (e.g. `./data/collar.csv` or `assays.txt`). Auto-resolves folder and file! |
-| `--buffer <num>` | `-b <num>` | Additional spatial buffer distance for collar boundaries (default: `0`) |
-| `--classes <num>` | `-c <num>` | Number of percentile classes for assay grade analysis (default: `6`) |
-| `--format <csv\|txt>` | `-f <csv\|txt>` | Export format (saved into `./exports/` or `--outdir`) |
-| `--outdir <path>` | `-o <path>` | Custom export output directory (default: `./exports/`) |
-| `--cols <c1,c2,...>` | | Comma-separated list of target columns for assay or lithology |
-| `--no-banner` | `-q` | Suppress startup animation (recommended for scripts and AI agents) |
-| `--dir <path>` | `-d <path>` | Optional directory override (not needed when passing file path) |
-| `--file <name>` | | Optional explicit file name |
+| Option                | Short           | Description                                                                                           |
+| --------------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| `[file-path]`         | (positional)    | Direct path to target file (e.g. `./data/collar.csv` or `assays.txt`). Auto-resolves folder and file! |
+| `--buffer <num>`      | `-b <num>`      | Additional spatial buffer distance for collar boundaries (default: `0`)                               |
+| `--classes <num>`     | `-c <num>`      | Number of percentile classes for assay grade analysis (default: `6`)                                  |
+| `--format <csv\|txt>` | `-f <csv\|txt>` | Export format (saved into `./exports/` or `--outdir`)                                                 |
+| `--outdir <path>`     | `-o <path>`     | Custom export output directory (default: `./exports/`)                                                |
+| `--cols <c1,c2,...>`  |                 | Comma-separated list of target columns for assay or lithology                                         |
+| `--no-banner`         | `-q`            | Suppress startup ASCII banner (recommended for scripts and AI agents)                                 |
+| `--dir <path>`        | `-d <path>`     | Optional directory override (not needed when passing file path)                                       |
+| `--file <name>`       |                 | Optional explicit file name                                                                           |
 
 > [!TIP]
 > **No `--dir` or `--file` Required**:
-> You can pass the file path directly (e.g. `drill collar ./data/collar.csv -b 50`). The CLI automatically extracts the folder and filename. If you omit the file path entirely, it intelligently scans the current folder and data subfolders for the matching file!
+> You can pass the file path directly (e.g. `drill collar ./data/collar.csv -b 50`). If you omit the file path entirely, the CLI intelligently scans the current folder and subfolders (`data/`, `data_tests/`) for the best matching file.
 
 ---
 
@@ -112,14 +166,10 @@ drill --collar --dir ./project-data --file collar.csv
 
 ### 1. Geological Database Audit & QA/QC
 
-Audit an interval or collar file to detect structural and geological inconsistencies:
+Validate downhole intervals or collar files to detect geological inconsistencies:
 
 ```bash
-# Direct positional syntax:
 drill audit ./project-data/assays.txt -q
-
-# Export findings report directly to CSV:
-drill audit ./project-data/assays.txt -f csv -q
 ```
 
 ```text
@@ -138,7 +188,8 @@ Findings Summary:
 ✔ No se detectaron anomalías ni inconsistencias geológicas en este archivo.
 ```
 
-If errors or anomalies exist, they are flagged with severity and drillhole identifiers:
+When errors or anomalies are found, they are reported with specific row and hole IDs:
+
 ```text
 Detailed Findings (sample):
   ✖ [CRITICAL] Fila 3 | Pozo: DH01 | Col: FROM / TO -> Intervalo invertido o nulo: FROM (15) >= TO (10)
@@ -146,23 +197,20 @@ Detailed Findings (sample):
   ℹ [INFO]     Fila 6 | Pozo: DH02 | Col: CUT%      -> Código centinela minero '-999' detectado en columna numérica
 ```
 
-Export the audit findings directly to CSV:
+Export the findings report directly to CSV:
+
 ```bash
-drill --audit --dir ./project-data --file assays.txt --format csv
+drill audit ./project-data/assays.txt -f csv -q
 ```
 
 ---
 
 ### 2. Collar Limits & Vulcan Block Model (`.bdf`) Framework
 
-Calculate bounding box extents and origin for Vulcan block modeling:
+Calculate bounding box extents and origin coordinates for Vulcan block modeling:
 
 ```bash
-# Modern syntax:
 drill collar ./project-data/header.txt -b 50 -f csv -q
-
-# Or simply (if located inside project-data):
-# drill collar header.txt -b 50
 ```
 
 ```text
@@ -191,7 +239,8 @@ ELEVATION (Z):
 ```
 
 > [!NOTE]
-> Directional rounding ensures model extents align with parent block dimensions:
+> Directional rounding aligns spatial boundaries with parent block grids:
+>
 > - Minimum coordinates are floored to the nearest 100m (or 10m for elevation).
 > - Maximum coordinates are ceiled to the nearest 100m (or 10m for elevation).
 > - Elevation automatically incorporates maximum downhole length (`LENGTH`) to enclose the deposit at depth.
@@ -203,7 +252,6 @@ ELEVATION (Z):
 Analyze assay grade distributions with clean sentinel handling:
 
 ```bash
-# Modern syntax:
 drill assay ./project-data/assays.txt --cols "CUT%" -c 6 -q
 ```
 
@@ -236,7 +284,6 @@ Variable: CUT%
 Extract rock and alteration codes with occurrence counts and dataset percentages:
 
 ```bash
-# Modern syntax:
 drill litho ./project-data/litho.txt --cols RX_CODE -q
 ```
 
@@ -261,7 +308,6 @@ Columna: RX_CODE (14 códigos únicos):
 Generate Vulcan-compatible database column definitions:
 
 ```bash
-# Modern syntax:
 drill schema ./project-data/header.txt -q
 ```
 
@@ -285,7 +331,7 @@ All CSV exports use period (`.`) decimal formatting and standard comma separatio
 
 ## Interactive Mode
 
-Run `drill` without flags to launch the terminal wizard powered by `@clack/prompts`:
+Run `drill` without arguments to launch the terminal wizard powered by `@clack/prompts`:
 
 ```bash
 drill
@@ -308,7 +354,7 @@ pnpm install
 # Run the interactive CLI in development mode (tsx)
 pnpm drill
 
-# Execute test suite (66 tests)
+# Execute test suite (68 tests)
 pnpm test
 
 # Build production bundle
@@ -317,24 +363,17 @@ pnpm build
 
 ### GitHub Actions and npm publishing
 
-The repository has two workflows:
+The repository has two automated CI/CD workflows:
 
-- `CI` runs tests, type-checking, and the production build on every pull request and push to `main`.
-- `Publish package` runs only for version tags such as `v1.0.4`. It verifies that the tag matches `package.json`, validates the package, and then publishes it to npm.
+- `CI` runs tests, strict type-checking, and the production build on every pull request and push to `main`.
+- `Publish package` runs only for version tags such as `v1.0.4`. It verifies that the tag matches `package.json`, validates the package, and publishes to npm.
 
-To configure publishing once in GitHub:
-
-1. Create an npm access token with permission to publish `@luicciandev/drillhole-cli`.
-2. In the repository, open **Settings → Secrets and variables → Actions** and add the token as the `NPM_TOKEN` repository secret.
-3. Commit and push your changes to a feature branch, then open a pull request. CI must pass before merging.
-4. After merging, update the version and create a matching tag:
+To publish a new release:
 
 ```bash
 pnpm version patch
 git push origin main --follow-tags
 ```
-
-For example, `pnpm version patch` changes the version from `1.0.3` to `1.0.4`, creates the `v1.0.4` tag, and the publish workflow sends that version to npm. Use `pnpm version minor` or `pnpm version major` for larger releases.
 
 > [!TIP]
 > For internal architecture, algorithms, and developer API contracts, consult the [Technical Reference](docs/TECHNICAL-REFERENCE.md). For AI agent automation, refer to [AGENTS.md](AGENTS.md).
