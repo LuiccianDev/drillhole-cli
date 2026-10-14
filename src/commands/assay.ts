@@ -114,7 +114,10 @@ export function printAssay(result: AssayResult): void {
   for (const [col, v] of Object.entries(result)) {
     console.log(`\nVariable: ${col}`);
     console.log(`  Rango Raw    : [${v.raw_min}, ${v.raw_max}]`);
-    console.log(`  Muestras     : ${v.validCount} válidas` + (v.sentinelCount > 0 ? ` (${v.sentinelCount} centinelas excluidos)` : ''));
+    console.log(
+      `  Muestras     : ${v.validCount} válidas` +
+        (v.sentinelCount > 0 ? ` (${v.sentinelCount} centinelas excluidos)` : ''),
+    );
     console.log(`  Media (μ)    : ${v.mean}`);
     console.log(`  Mediana (P50): ${v.median}`);
     console.log(`  Desv. Est (σ): ${v.stdDev} (Varianza: ${v.variance})`);
